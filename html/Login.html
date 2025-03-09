@@ -1,0 +1,52 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Login Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        .bg-custom-blue {
+            background-color: #1a202c;
+        }
+        .text-custom-blue {
+            color: #4299e1;
+        }
+        .hover\:bg-custom-blue:hover {
+            background-color: #2b6cb0;
+        }
+    </style>
+</head>
+<body class="bg-white">
+    <div class="flex flex-col md:flex-row h-screen">
+        <!-- Left Side -->
+        <div class="flex-1 flex items-center justify-center bg-blue-100">
+            <img alt="3D illustration of a person in a suit holding a laptop" height="600" src="https://storage.googleapis.com/a1aa/image/4iE_cdHmHOQiO8bVtzWtOdsPDJi4qnrzNZeeuDCpmhA.jpg" width="400"/>
+        </div>
+        <!-- Right Side -->
+        <div class="flex-1 flex flex-col justify-center items-center bg-custom-blue text-white p-8">
+            <div class="w-full max-w-sm">
+                <div class="text-center mb-8">
+                    <img alt="SmartOqulyq logo" class="mx-auto mb-4" height="50" src="https://storage.googleapis.com/a1aa/image/9KiFmNQAcgoUiO5nCXeK5sIcHT6L7Pzsom_mhYJs-yw.jpg" width="150"/>
+                </div>
+                <h1 class="text-3xl font-bold mb-6">Kipy</h1>
+                <form>
+                    <div class="mb-4">
+                        <input class="w-full p-3 rounded bg-white text-black" placeholder="E-mail" type="email"/>
+                    </div>
+                    <div class="mb-6">
+                        <input class="w-full p-3 rounded bg-white text-black" placeholder="Пароль" type="password"/>
+                    </div>
+                    <button class="w-full p-3 rounded bg-blue-600 hover:bg-custom-blue" type="submit">Kipy</button>
+                </form>
+                <div class="text-center mt-4">
+                    <a class="text-custom-blue hover:underline" href="#">Куптасы умыткан жагдайда ба?</a>
+                </div>
+                <div class="text-center mt-8 text-sm">
+                    Авторлык кукык © 2025 SmartOqulyq
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
