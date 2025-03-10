@@ -1,0 +1,13 @@
+<!-- templates/home.html -->
+{% extends 'base.html' %}
+
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+    <h1>Добро пожаловать в Күнделік!</h1>
+    {% if user.is_authenticated %}
+        <p>Вы вошли как {{ user.get_role_display }}.</p>
+    {% else %}
+        <p>Пожалуйста, войдите или зарегистрируйтесь.</p>
+    {% endif %}
+{% endblock %}
