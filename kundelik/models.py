@@ -23,9 +23,10 @@ class User(AbstractUser):
     parent_of = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
+    surname = models.CharField(max_length=150, blank=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.get_role_display()})"
+        return f"{self.first_name} {self.last_name} {self.surname} ({self.get_role_display()})"
 
 
 class Subject(models.Model):

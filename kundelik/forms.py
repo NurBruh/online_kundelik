@@ -12,7 +12,7 @@ class UserRegistrationForm(UserCreationForm):
 
     class Meta(UserCreationForm.Meta):  # Исправлено
         model = User
-        fields = UserCreationForm.Meta.fields + ('role', 'school', 'first_name', 'last_name', 'parent_of')
+        fields = UserCreationForm.Meta.fields + ('role', 'school', 'first_name', 'last_name', 'surname' , 'parent_of')
 
 class SchoolForm(forms.ModelForm):
     class Meta:

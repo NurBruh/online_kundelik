@@ -1,10 +1,14 @@
 from django.contrib.auth import login, logout, authenticate
-from django.shortcuts import render, redirect, get_object_or_404  # Добавили get_object_or_404
-from django.contrib.auth.forms import AuthenticationForm
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm  # Импортируем PasswordResetForm
+from django.urls import reverse_lazy
+
 from .models import Schedule, DailyGrade, ExamGrade, Class, Subject
 from .forms import *
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
+from collections import defaultdict
+from django.contrib.auth.views import PasswordResetView #Импорт
 
 def home(request):
     return render(request, 'home.html')
@@ -23,20 +27,18 @@ def schedule(request):
     return render(request, 'schedule.html', {'schedules': schedules})
 
 @login_required
-def daily_grades(request, class_id=None):  # Изменено: принимаем class_id
+def daily_grades(request, class_id=None):
     user = request.user
     if class_id:
-        # Оценки для конкретного класса
         selected_class = get_object_or_404(Class, pk=class_id)
         if user.role == 'teacher':
-            grades = DailyGrade.objects.filter(teacher=user, student__schedule__school_class=selected_class) #исправление
+            grades = DailyGrade.objects.filter(teacher=user, student__schedule__school_class=selected_class)
         elif user.role in ['admin', 'director']:
-             grades = DailyGrade.objects.filter(student__schedule__school_class=selected_class) #исправление
+             grades = DailyGrade.objects.filter(student__schedule__school_class=selected_class)
         else:
             return HttpResponseForbidden("У вас нет прав для просмотра оценок этого класса.")
         return render(request, 'daily_grades.html', {'grades': grades, 'selected_class': selected_class})
     else:
-        # Оценки текущего пользователя (как раньше)
         if user.role == 'student':
             grades = DailyGrade.objects.filter(student=user)
         elif user.role == 'teacher':
@@ -49,20 +51,18 @@ def daily_grades(request, class_id=None):  # Изменено: принимае�
 
 
 @login_required
-def exam_grades(request, class_id=None):  # Изменено: принимаем class_id
+def exam_grades(request, class_id=None):
     user = request.user
     if class_id:
-        # Оценки за контрольные для конкретного класса
         selected_class = get_object_or_404(Class, pk=class_id)
         if user.role == 'teacher':
-            grades = ExamGrade.objects.filter(teacher=user,  student__schedule__school_class=selected_class)  #исправил
+            grades = ExamGrade.objects.filter(teacher=user,  student__schedule__school_class=selected_class)
         elif user.role in ['admin', 'director']:
-            grades = ExamGrade.objects.filter( student__schedule__school_class=selected_class) #исправил
+            grades = ExamGrade.objects.filter( student__schedule__school_class=selected_class)
         else:
             return HttpResponseForbidden("У вас нет прав для просмотра оценок этого класса.")
         return render(request, 'exam_grades.html', {'grades': grades, 'selected_class': selected_class})
     else:
-        # Оценки текущего пользователя (как раньше)
         if user.role == 'student':
             grades = ExamGrade.objects.filter(student=user)
         elif user.role == 'teacher':
@@ -189,7 +189,7 @@ def add_daily_grade(request):
             if request.user.role == 'teacher':
                 grade.teacher = request.user
             grade.save()
-            return redirect('daily_grades')  # Перенаправляем на страницу с ежедневными оценками
+            return redirect('daily_grades')
     else:
         form = DailyGradeForm()
         if request.user.role == 'teacher':
@@ -224,3 +224,41 @@ def class_list(request):
         return HttpResponseForbidden("У вас нет прав для просмотра списка классов.")
     classes = Class.objects.all()
     return render(request, 'class_list.html', {'classes': classes})
+
+@login_required
+def journal(request):
+    user = request.user
+    if user.role == 'student':
+        schedules = Schedule.objects.filter(student=user).order_by('date', 'lesson_number')
+    elif user.role == 'teacher':
+        schedules = Schedule.objects.filter(teacher=user).order_by('date', 'lesson_number')
+    elif user.role == 'parent':
+        schedules = Schedule.objects.filter(student=user.parent_of).order_by('date', 'lesson_number')
+    else:  # admin, director
+        schedules = Schedule.objects.all().order_by('date', 'lesson_number')
+
+    schedules_by_date = defaultdict(list)
+    for s in schedules:
+        schedules_by_date[s.date].append(s)
+
+    return render(request, 'journal.html', {'schedules_by_date': schedules_by_date})
+
+@login_required
+def teacher_schedule(request):
+    if request.user.role != 'teacher':
+        return HttpResponseForbidden("У вас нет прав для просмотра расписания учителя.")
+
+    schedules = Schedule.objects.filter(teacher=request.user).order_by('date', 'lesson_number')
+    return render(request, 'teacher_schedule.html', {'schedules': schedules})
+
+def about(request):
+    return render(request, 'about.html')
+
+def recommendations(request):
+    return  render(request, 'recommendations.html')
+
+#Представление для сброса пароля
+class CustomPasswordResetView(PasswordResetView):
+    template_name = 'recovery.html'  #  шаблон recovery.html
+    email_template_name = 'password_reset_email.html'  #  шаблон email сообщения
+    success_url = reverse_lazy('password_reset_done')  #  перенаправление после успешного сброса
