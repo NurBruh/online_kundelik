@@ -3,6 +3,8 @@ from django.urls import path, include, reverse_lazy
 from . import views
 from django.contrib.auth import views as auth_views #Импортируем
 
+from .views import about
+
 urlpatterns = [
     path('', views.home, name='home'),
     path('schedule/', views.schedule, name='schedule'),
@@ -23,7 +25,8 @@ urlpatterns = [
     path('class_list/', views.class_list, name='class_list'),
     path('journal/', views.journal, name='journal'),
     path('teacher_schedule/', views.teacher_schedule, name='teacher_schedule'),
-    path('about/', views.about, name='about'),
+    path('about us/', views.about, name='about'),
+
     path('recommendations/', views.recommendations, name='recommendations'),
     path('password_reset/', views.CustomPasswordResetView.as_view(), name='password_reset'), #Для сброса пароля
     path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='password_reset_done.html'), name='password_reset_done'),#Для сброса пароля

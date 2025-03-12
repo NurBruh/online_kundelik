@@ -18,12 +18,17 @@ class User(AbstractUser):
         ('student', 'Ученик'),
         ('parent', 'Родитель'),
     ]
+
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
     parent_of = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
+
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
     surname = models.CharField(max_length=150, blank=True)
+
+    iin = models.CharField(max_length=12, unique=True, blank=True, null=True, verbose_name="ИИН")  # Добавлен ИИН
+    birth_date = models.DateField(null=True, blank=True, verbose_name="Дата рождения")  # Добавлена дата рождения
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} {self.surname} ({self.get_role_display()})"
@@ -41,7 +46,7 @@ class Class(models.Model):
     name = models.CharField(max_length=10)  # Например, "1A", "5Б", "10"
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='classes')
     teacher = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
-                                related_name='classes_taught')  # куратор
+                                related_name='classes_taught')  # Куратор
 
     def __str__(self):
         return self.name
