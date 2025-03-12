@@ -1,0 +1,231 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background-color: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.logo img {
+    height: 50px;
+    margin-right: 10px;
+}
+
+.nav-links a {
+    margin: 0 10px;
+    text-decoration: none;
+    color: #333;
+}
+
+.start-btn {
+    background-color: #007bff;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.start-btn:hover {
+    background-color: #0056b3;
+}
+
+.hero {
+    text-align: center;
+    padding: 50px 20px;
+}
+
+.hero img {
+    height: 100px;
+    width: 350px;
+}
+
+.hero h1 {
+    font-size: 2.5em;
+    color: #007bff;
+}
+
+.hero p {
+    font-size: 1.2em;
+    color: #555;
+}
+
+.cta-btn {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.cta-btn:hover {
+    background-color: #0056b3;
+}
+
+.about-section {
+    display: flex;
+    align-items: center;
+    background-color: #f2f4ff;
+    padding: 40px;
+    border-radius: 8px;
+    margin: 40px auto;
+    width: 80%;
+}
+
+.about-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.about-image {
+    width: 300px;
+    border-radius: 8px;
+}
+
+.about-text {
+    max-width: 500px;
+}
+
+.more-btn {
+    background-color: #1e40af;
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.more-btn:hover {
+    background-color: #1a3c9b;
+}
+
+.advantages-section {
+    padding: 40px;
+    width: 80%;
+    margin: auto;
+}
+
+.advantages-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.advantages-text {
+    max-width: 50%;
+}
+
+.advantages-image {
+    width: 300px;
+    border-radius: 8px;
+}
+
+
+.features {
+    text-align: center;
+    padding: 50px;
+    background-color: white;
+}
+
+.features ul {
+    list-style: none;
+    padding: 0;
+}
+
+.features li {
+    font-size: 1.2em;
+    color: #555;
+    margin: 10px 0;
+}
+
+.services {
+    display: flex;
+    justify-content: space-around;
+    padding: 50px;
+    background-color: #f8f9fa;
+}
+
+.service {
+    text-align: center;
+    width: 30%;
+}
+
+.service img {
+    width: 100%;
+    border-radius: 10px;
+}
+
+.service h3 {
+    margin-top: 15px;
+    font-size: 1.5em;
+}
+
+.service ul {
+    list-style: none;
+    padding: 0;
+}
+
+.service li {
+    font-size: 1.1em;
+    color: #555;
+}
+
+.footer-section {
+    background-color: #0a0a2a;
+    color: white;
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.footer-section h1 {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.footer-section p {
+    font-size: 18px;
+    font-style: italic;
+    margin-top: 5px;
+}
+
+.footer-section .start-btn {
+    background-color: #1e40af;
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.footer-section .start-btn:hover {
+    background-color: #1a3c9b;
+}
+
+.footer {
+    text-align: center;
+    padding: 15px;
+    font-size: 14px;
+    color: #555;
+}
+
