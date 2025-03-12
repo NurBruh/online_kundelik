@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import User, School, Schedule, DailyGrade, ExamGrade, Class, Subject
 from django.forms.widgets import DateInput, TimeInput
+from django.contrib.auth.forms import AuthenticationForm
+
 
 class UserRegistrationForm(UserCreationForm):
     role = forms.ChoiceField(choices=User.ROLE_CHOICES)
@@ -53,3 +55,10 @@ class ExamGradeForm(forms.ModelForm):
         widgets = {
             'date': DateInput(attrs={'type': 'date'}),
         }
+
+
+class CustomAuthenticationForm(AuthenticationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Логин'})
+        self.fields['password'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Пароль'})

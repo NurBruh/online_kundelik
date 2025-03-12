@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'kundelik',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
@@ -80,8 +81,8 @@ WSGI_APPLICATION = 'strup.wsgi.application'
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-}"""
-
+}
+"""
 
 DATABASES = {
 

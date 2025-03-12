@@ -1,13 +1,105 @@
-<!-- templates/login.html -->
-{% extends 'base.html' %}
+<!-- templates/kundelik/login.html -->
+{% load static %}
+{% load widget_tweaks %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .bg-custom-blue {
+            background-color: #1a202c; /* Темный фон справа - ОСТАВЛЯЕМ КАК ЕСТЬ */
+        }
+        .bg-light-blue {
+            background-color: #f0f7ff; /* Более светлый голубой фон слева - ИЗМЕНИЛИ */
+        }
+        .btn-custom {
+            background-color: #3b82f6; /* Более яркий синий цвет кнопки - ИЗМЕНИЛИ */
+            color: white;
+            border: none;
+            border-radius: 0.5rem; /* Добавляем border-radius для кнопки, как у инпутов */
+        }
+        .btn-custom:hover {
+            background-color: #2563eb; /* Цвет hover оставляем как есть или можно чуть светлее, например #60a5fa */
+        }
+        .form-control {
+            border-radius: 0.5rem; /* Делаем border-radius инпутов чуть меньше и более согласованным с кнопкой - ИЗМЕНИЛИ */
+            background-color: #ffffff; /* Белый фон для инпутов - ДОБАВИЛИ */
+            border: 1px solid #ced4da; /* Добавляем границу, если нужно - ДОБАВИЛИ, можно настроить цвет */
+        }
+        .logo-img {
+            max-height: 150px; /* Чуть уменьшаем логотип - ИЗМЕНИЛИ */
+        }
+        h2.fw-bold {
+            font-size: 2rem; /* Увеличиваем размер заголовка "Kipy" - ДОБАВИЛИ */
+            margin-bottom: 1.5rem !important; /* Увеличиваем margin-bottom для заголовка - ДОБАВИЛИ и делаем important для переопределения bootstrap */
+        }
+        .text-primary {
+            color: #60a5fa !important; /* Более яркий голубой цвет для ссылки "Куптасы умыткан жагдайда ба?" - ИЗМЕНИЛИ и делаем important для переопределения bootstrap */
+        }
+        .small.text-center {
+            color: #9ca3af !important; /* Более светлый серый цвет для текста авторских прав - ИЗМЕНИЛИ и делаем important для переопределения bootstrap */
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid h-100">
+        <div class="row h-100 g-0">
+            <!-- Левая сторона (Картинка) -->
+            <div class="col-md-6 d-flex align-items-center justify-content-center bg-light-blue">
+                <img src="https://storage.googleapis.com/a1aa/image/4iE_cdHmHOQiO8bVtzWtOdsPDJi4qnrzNZeeuDCpmhA.jpg"
+                     alt="Person with Laptop"
+                     class="img-fluid" style="max-height: 500px;">
+            </div>
 
-{% block title %}Вход{% endblock %}
+            <!-- Правая сторона (Форма) -->
+            <div class="col-md-6 d-flex align-items-center justify-content-center bg-custom-blue text-white">
+                <div class="w-100" style="max-width: 400px;">
+                    <div class="text-center mb-3"> <!-- Уменьшаем mb-4 до mb-3 для логотипа -->
+                        <img src="https://storage.googleapis.com/a1aa/image/9KiFmNQAcgoUiO5nCXeK5sIcHT6L7Pzsom_mhYJs-yw.jpg"
+                             alt="Logo"
+                             class="logo-img">
+                    </div>
+                    <h2 class="fw-bold text-center mb-4">Kipy</h2>
 
-{% block content %}
-    <h1>Вход</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Войти</button>
-    </form>
-{% endblock %}
+                    <form method="post">
+                        {% csrf_token %}
+                              
+                        <div class="mb-3">
+                            {{ form.username|attr:'class:form-control' }}  <!----  Проверь, что написано именно add_attributes и нет опечаток -->
+                        </div>
+                        <div class="mb-3">
+                            {{ form.password|attr:'class:form-control' }}  <!----  Проверь, что написано именно add_attributes и нет опечаток -->
+                        </div>
+
+    
+                        <button type="submit" class="btn btn-custom w-100 py-2">Kipy</button>
+                        {% if form.errors %}
+                            <div class="text-danger text-center mt-3">
+                                Неправильный логин или пароль.
+                            </div>
+                        {% endif %}
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'password_reset' %}" class="text-decoration-none text-primary">Куптасы умыткан жагдайда ба?</a>
+                    </div>
+
+                    <div class="text-center mt-4 small text-muted"> <!-- Добавляем text-muted для более светлого текста -->
+                        Авторлык кукык © 2025 SmartOqulyq
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
