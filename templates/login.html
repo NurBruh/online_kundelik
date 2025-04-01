@@ -1,52 +1,67 @@
 {% load static %}
-<!DOCTYPE html>
-<html lang="kk">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Кіру - SmartOqulyq</title>
-    <meta name="description" content="SmartOqulyq – мектеп оқушыларына арналған білім беру платформасы.">
-    <meta name="keywords" content="SmartOqulyq, білім, тест, оқу">
-    <meta name="author" content="SmartOqulyq Team">
-    <meta property="og:title" content="Кіру - SmartOqulyq">
-    <meta property="og:image" content="{% static 'image/logo.png' %}">
-    <link rel="stylesheet" href="{% static 'css/regist.css' %}">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Login Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        .bg-custom-blue {
+            background-color: #1a202c;
+        }
+        .text-custom-blue {
+            color: #4299e1;
+        }
+        .hover\:bg-custom-blue:hover {
+            background-color: #2b6cb0;
+        }
+    </style>
 </head>
-<body>
-
-    <div class="page-container">
-        <!-- Хедер с логотипом -->
-        <header class="header">
-            <a href="{% url 'home' %}" class="logo-link">
-                <img src="{% static 'image/image.png' %}" alt="SmartOqulyq" class="logo">
-            </a>
-        </header>
-
-        <div class="main-content">
-            <!-- Левая часть с картинкой -->
-            <div class="image-section">
-                <img src="{% static 'image/баука.jpg' %}" alt="SmartOqulyq" class="illustration">
-            </div>
-
-            <!-- Правая часть с формой -->
-            <div class="form-section">
-                <h2>Кіру</h2>
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="text" name="username" placeholder="Логин" required autocomplete="off">
-                    <input type="password" name="password" placeholder="Құпиясөз" required autocomplete="off">
-                    <button type="submit">Кіру</button>
-                </form>
-
-                <div class="auth-links">
-                    <a href="{% url 'password_reset' %}" class="forgot-password">Құпиясөзді ұмыттыңыз ба?</a>
-                    <a href="{% url 'register' %}" class="register-btn">Тіркелу</a>
+<body class="bg-white">
+    <div class="flex flex-col md:flex-row h-screen">
+        <!-- Left Side -->
+        <div class="flex-1 flex items-center justify-center bg-blue-100">
+            <img alt="3D illustration of a person in a suit holding a laptop" height="600" src="https://storage.googleapis.com/a1aa/image/4iE_cdHmHOQiO8bVtzWtOdsPDJi4qnrzNZeeuDCpmhA.jpg" width="400"/>
+        </div>
+        <!-- Right Side -->
+        <div class="flex-1 flex flex-col justify-center items-center bg-custom-blue text-white p-8">
+            <div class="w-full max-w-sm">
+                <div class="text-center mb-8">
+                    <img alt="SmartOqulyq logo" class="mx-auto mb-4" height="50" src="https://storage.googleapis.com/a1aa/image/9KiFmNQAcgoUiO5nCXeK5sIcHT6L7Pzsom_mhYJs-yw.jpg" width="150"/>
                 </div>
+                <h1 class="text-3xl font-bold mb-6">Kipy</h1>
+               <form method="post" action="{% url 'login' %}"> {# Добавили method и action #}
+     {% csrf_token %} {# Добавили CSRF токен #}
 
-                <p class="copyright">Авторлық құқық © 2025 SmartOqulyq</p>
+     {# Теперь нужно отрендерить поля формы Django #}
+     <div class="mb-4">
+         {{ form.username }} {# Рендерим поле username из формы Django #}
+         {% if form.username.errors %}
+             <p class="text-red-500 text-xs italic">{{ form.username.errors|striptags }}</p>
+         {% endif %}
+     </div>
+     <div class="mb-6">
+         {{ form.password }} {# Рендерим поле password #}
+          {% if form.password.errors %}
+             <p class="text-red-500 text-xs italic">{{ form.password.errors|striptags }}</p>
+         {% endif %}
+     </div>
+      {% if form.non_field_errors %} {# Ошибки, не связанные с полями, например, "Неверный логин/пароль" #}
+         <div class="mb-4 text-red-500 text-sm">
+             {{ form.non_field_errors|striptags }}
+         </div>
+     {% endif %}
+     <button class="w-full p-3 rounded bg-blue-600 hover:bg-blue-700" type="submit">Кіру</button> {# Исправили 'Kipy' и hover #}
+</form>
+                <div class="text-center mt-4">
+                     <a class="text-custom-blue hover:underline" href="{% url 'password_reset' %}">Купия сөзді ұмыттыңыз ба?</a>
+                </div>
+                <div class="text-center mt-8 text-sm">
+                    Авторлык кукык © 2025 SmartOqulyq
+                </div>
             </div>
         </div>
     </div>
-
 </body>
 </html>

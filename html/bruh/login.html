@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кіру - SmartOqulyq</title>
+    <meta name="description" content="SmartOqulyq – мектеп оқушыларына арналған білім беру платформасы.">
+    <meta name="keywords" content="SmartOqulyq, білім, тест, оқу">
+    <meta name="author" content="SmartOqulyq Team">
+    <meta property="og:title" content="Кіру - SmartOqulyq">
+    <meta property="og:image" content="{% static 'image/logo.png' %}">
+    <link rel="stylesheet" href="{% static 'css/regist.css' %}">
+</head>
+<body>
+
+    <div class="page-container">
+        <!-- Хедер с логотипом -->
+        <header class="header">
+            <a href="{% url 'home' %}" class="logo-link">
+                <img src="{% static 'image/image.png' %}" alt="SmartOqulyq" class="logo">
+            </a>
+        </header>
+
+        <div class="main-content">
+            <!-- Левая часть с картинкой -->
+            <div class="image-section">
+                <img src="{% static 'image/баука.jpg' %}" alt="SmartOqulyq" class="illustration">
+            </div>
+
+            <!-- Правая часть с формой -->
+            <div class="form-section">
+                <h2>Кіру</h2>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="text" name="username" placeholder="Логин" required autocomplete="off">
+                    <input type="password" name="password" placeholder="Құпиясөз" required autocomplete="off">
+                    <button type="submit">Кіру</button>
+                </form>
+
+                <div class="auth-links">
+                    <a href="{% url 'password_reset' %}" class="forgot-password">Құпиясөзді ұмыттыңыз ба?</a>
+                    <a href="{% url 'register' %}" class="register-btn">Тіркелу</a>
+                </div>
+
+                <p class="copyright">Авторлық құқық © 2025 SmartOqulyq</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
