@@ -12,7 +12,7 @@ class UserRegistrationForm(UserCreationForm):
     last_name = forms.CharField(max_length=150)
     parent_of = forms.ModelChoiceField(queryset=User.objects.filter(role='student'), required=False, label="Ученик (для родителя)")
 
-    class Meta(UserCreationForm.Meta):  # Исправлено
+    class Meta(UserCreationForm.Meta):
         model = User
         fields = UserCreationForm.Meta.fields + ('role', 'school', 'first_name', 'last_name', 'surname' , 'parent_of')
 
@@ -60,5 +60,13 @@ class ExamGradeForm(forms.ModelForm):
 class CustomAuthenticationForm(AuthenticationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['username'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Логин'})
-        self.fields['password'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Пароль'})
+        # ИСПРАВЛЕНО: Заменяем 'form-control' на 'form-input'
+        self.fields['username'].widget.attrs.update({
+            'class': 'form-input', # <-- Вот правильный класс из твоего CSS
+            'placeholder': 'Логин'
+            })
+        # ИСПРАВЛЕНО: Заменяем 'form-control' на 'form-input'
+        self.fields['password'].widget.attrs.update({
+            'class': 'form-input', # <-- Вот правильный класс из твоего CSS
+            'placeholder': 'Пароль'
+            })

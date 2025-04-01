@@ -1,0 +1,230 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartOqulyq - Сарсенбек Ерхан</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            height: calc(100vh - 4rem);
+        }
+        .status-present {
+            color: #10B981;
+        }
+        .status-absent {
+            color: #EF4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <img alt="SmartOqulyq logo" class="h-10" src="https://storage.googleapis.com/a1aa/image/laXUl7LSUy6m6EKTAnIBF56xHirYlJbVAn2Lsptl-gE.jpg">
+                <span class="text-xl font-bold ml-2">SmartOqulyq</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-600">Сарсенбек Ерхан</span>
+                <img alt="User avatar" class="h-8 w-8 rounded-full" src="https://storage.googleapis.com/a1aa/image/Uom1BKxAKL0T2hzt2FPvuS1vtMA4QjSEx0M6LMe23YA.jpg">
+            </div>
+        </div>
+    </header>
+
+    <div class="flex">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-md sidebar">
+            <div class="p-4 border-b">
+                <div class="flex items-center space-x-3">
+                </div>
+            </div>
+            <nav class="p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="#" class="flex items-center space-x-2 p-2 rounded bg-blue-100 text-blue-700">
+                            <i class="fas fa-calendar-alt w-5"></i>
+                            <span>Сабақ кестесі</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
+                            <i class="fas fa-book w-5"></i>
+                            <span>Күнделік</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
+                            <i class="fas fa-chalkboard-teacher w-5"></i>
+                            <span>Мұғаліммен байланыс</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
+                            <i class="fas fa-star w-5"></i>
+                            <span>Бағалар</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
+                            <i class="fas fa-file-alt w-5"></i>
+                            <span>БЖБ/ТЖБ</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
+                            <i class="fas fa-user w-5"></i>
+                            <span>Профиль</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center space-x-2 p-2 rounded hover:bg-gray-100">
+                            <i class="fas fa-chart-bar w-5"></i>
+                            <span>Статистика</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6">
+            <!-- Schedule Section -->
+            <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+                <div class="bg-blue-600 text-white p-4">
+                    <h2 class="text-xl font-bold">Сабақ кестесі</h2>
+                </div>
+                <div class="bg-blue-800 text-white p-3 flex justify-between items-center">
+                    <button class="px-3 py-1 rounded hover:bg-blue-700">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="font-medium">25 Ақпан 2025</span>
+                    <button class="px-3 py-1 rounded hover:bg-blue-700">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-blue-600 text-white">
+                            <tr>
+                                <th class="py-3 px-4 text-left">№</th>
+                                <th class="py-3 px-4 text-left">Пән</th>
+                                <th class="py-3 px-4 text-left">Уақыт</th>
+                                <th class="py-3 px-4 text-left">Тақырып</th>
+                                <th class="py-3 px-4 text-center">Статус</th>
+                                <th class="py-3 px-4 text-left">Үй тапсырма</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <!-- Lesson 1 -->
+                            <tr>
+                                <td class="py-3 px-4">1</td>
+                                <td class="py-3 px-4">
+                                    <div class="font-medium">Математика</div>
+                                    <div class="text-sm text-gray-500">Бауыржан Бисанов</div>
+                                </td>
+                                <td class="py-3 px-4">8:00-8:40</td>
+                                <td class="py-3 px-4">Жай бөлшектер</td>
+                                <td class="py-3 px-4 text-center status-present">
+                                    <i class="fas fa-check"></i>
+                                </td>
+                                <td class="py-3 px-4">№6, 7 тапсырма 79 бет</td>
+                            </tr>
+                            <!-- Lesson 2 -->
+                            <tr>
+                                <td class="py-3 px-4">2</td>
+                                <td class="py-3 px-4">
+                                    <div class="font-medium">Қазақ тілі</div>
+                                    <div class="text-sm text-gray-500">Жазира Бақай</div>
+                                </td>
+                                <td class="py-3 px-4">8:50-9:45</td>
+                                <td class="py-3 px-4">Жалғаулар</td>
+                                <td class="py-3 px-4 text-center status-present">
+                                    <i class="fas fa-check"></i>
+                                </td>
+                                <td class="py-3 px-4">№7 тапсырма 82 бет</td>
+                            </tr>
+                            <!-- Lesson 3 -->
+                            <tr>
+                                <td class="py-3 px-4">3</td>
+                                <td class="py-3 px-4">
+                                    <div class="font-medium">Жаратылыстану</div>
+                                    <div class="text-sm text-gray-500">Айсұлу Ергенғалиева</div>
+                                </td>
+                                <td class="py-3 px-4">9:50-10:35</td>
+                                <td class="py-3 px-4">Биосфера</td>
+                                <td class="py-3 px-4 text-center status-absent">
+                                    <i class="fas fa-times"></i>
+                                </td>
+                                <td class="py-3 px-4">§12 оқу және мазмұндау</td>
+                            </tr>
+                            <!-- Lesson 4 -->
+                            <tr>
+                                <td class="py-3 px-4">4</td>
+                                <td class="py-3 px-4">
+                                    <div class="font-medium">Музыка</div>
+                                    <div class="text-sm text-gray-500">Жанерке Егібай</div>
+                                </td>
+                                <td class="py-3 px-4">10:40-11:25</td>
+                                <td class="py-3 px-4">Құрманғазы</td>
+                                <td class="py-3 px-4 text-center status-absent">
+                                    <i class="fas fa-times"></i>
+                                </td>
+                                <td class="py-3 px-4">жаттау</td>
+                            </tr>
+                            <!-- Lesson 5 -->
+                            <tr>
+                                <td class="py-3 px-4">5</td>
+                                <td class="py-3 px-4">
+                                    <div class="font-medium">Орыс тілі</div>
+                                    <div class="text-sm text-gray-500">Баглыбек Нариман</div>
+                                </td>
+                                <td class="py-3 px-4">11:40-12:25</td>
+                                <td class="py-3 px-4">Культура питания</td>
+                                <td class="py-3 px-4 text-center status-present">
+                                    <i class="fas fa-check"></i>
+                                </td>
+                                <td class="py-3 px-4">уражнение 4 стр 102</td>
+                            </tr>
+                            <!-- Lesson 6 -->
+                            <tr>
+                                <td class="py-3 px-4">6</td>
+                                <td class="py-3 px-4">
+                                    <div class="font-medium">Дене шынықтыру</div>
+                                    <div class="text-sm text-gray-500">Кеңесары Бақғали</div>
+                                </td>
+                                <td class="py-3 px-4">12:30-13:15</td>
+                                <td class="py-3 px-4">Футбол ережелері</td>
+                                <td class="py-3 px-4 text-center status-present">
+                                    <i class="fas fa-check"></i>
+                                </td>
+                                <td class="py-3 px-4">Қашақтыққа жүгіру</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Footer Info -->
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <h3 class="font-bold mb-2">Біз туралы</h3>
+                        <p class="text-sm text-gray-600">SmartOqulyq - оқушыларға арналған білім беру платформасы</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold mb-2">Қазақстан Республикасы (ИК000)</h3>
+                        <p class="text-sm text-gray-600">Блок</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold mb-2">Адрес</h3>
+                        <p class="text-sm text-gray-600">Астана қ., Жамбыл ауданы</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

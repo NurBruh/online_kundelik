@@ -1,52 +1,87 @@
 {% load static %}
-<!DOCTYPE html>
-<html lang="kk">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Кіру - SmartOqulyq</title>
-    <meta name="description" content="SmartOqulyq – мектеп оқушыларына арналған білім беру платформасы.">
-    <meta name="keywords" content="SmartOqulyq, білім, тест, оқу">
-    <meta name="author" content="SmartOqulyq Team">
-    <meta property="og:title" content="Кіру - SmartOqulyq">
-    <meta property="og:image" content="{% static 'image/logo.png' %}">
-    <link rel="stylesheet" href="{% static 'css/regist.css' %}">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Страница входа</title>
+    {# Убрали Tailwind CDN #}
+    {# Оставили Font Awesome, если он нужен для иконок (хотя в форме их нет) #}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    {# Ссылка на твой собственный CSS файл #}
+    <link href="{% static 'css/login.css' %}" rel="stylesheet"/> {# Укажи правильный путь к своему CSS #}
 </head>
 <body>
-
     <div class="page-container">
-        <!-- Хедер с логотипом -->
-        <header class="header">
-            <a href="{% url 'home' %}" class="logo-link">
-                <img src="{% static 'image/image.png' %}" alt="SmartOqulyq" class="logo">
-            </a>
-        </header>
+        <!-- Левая сторона: Изображение -->
+        <div class="image-section">
+            <img
+                alt="3D иллюстрация человека в костюме с ноутбуком"
+                class="illustration"
+                src="https://storage.googleapis.com/a1aa/image/4iE_cdHmHOQiO8bVtzWtOdsPDJi4qnrzNZeeuDCpmhA.jpg"
+            />
+        </div>
 
-        <div class="main-content">
-            <!-- Левая часть с картинкой -->
-            <div class="image-section">
-                <img src="{% static 'image/баука.jpg' %}" alt="SmartOqulyq" class="illustration">
-            </div>
+        <!-- Правая сторона: Форма -->
+        <div class="form-section">
+            <div class="form-wrapper">
+                <div class="logo-container">
+                    <img
+                        alt="Логотип SmartOqulyq"
+                        class="logo-image"
+                        src="https://storage.googleapis.com/a1aa/image/9KiFmNQAcgoUiO5nCXeK5sIcHT6L7Pzsom_mhYJs-yw.jpg"
+                    />
+                </div>
+                <h1 class="form-title">Kipy</h1>
 
-            <!-- Правая часть с формой -->
-            <div class="form-section">
-                <h2>Кіру</h2>
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="text" name="username" placeholder="Логин" required autocomplete="off">
-                    <input type="password" name="password" placeholder="Құпиясөз" required autocomplete="off">
-                    <button type="submit">Кіру</button>
-                </form>
+               <form method="post" action="{% url 'login' %}" class="login-form">
+                 {% csrf_token %}
 
-                <div class="auth-links">
-                    <a href="{% url 'password_reset' %}" class="forgot-password">Құпиясөзді ұмыттыңыз ба?</a>
-                    <a href="{% url 'register' %}" class="register-btn">Тіркелу</a>
+                 <div class="form-field">
+                     {# Можно добавить <label>, но оставим пока как было, стилизуем input #}
+                     {{ form.username }}
+                     {% if form.username.errors %}
+                         <p class="error-message">{{ form.username.errors|striptags }}</p>
+                     {% endif %}
+                 </div>
+
+                 <div class="form-field">
+                      {# Можно добавить <label> #}
+                     {{ form.password }}
+                      {% if form.password.errors %}
+                         <p class="error-message">{{ form.password.errors|striptags }}</p>
+                     {% endif %}
+                 </div>
+
+                 {% if form.non_field_errors %}
+                     <div class="non-field-errors">
+                         {{ form.non_field_errors|striptags }}
+                     </div>
+                 {% endif %}
+
+                 <button class="submit-button" type="submit">
+                    Кіру
+                 </button>
+               </form>
+
+                <div class="links-container">
+                     <a class="forgot-password-link" href="{% url 'password_reset' %}">
+                        Купия сөзді ұмыттыңыз ба?
+                     </a>
                 </div>
 
-                <p class="copyright">Авторлық құқық © 2025 SmartOqulyq</p>
+                <div class="copyright">
+                    Авторлык кукык © 2025 SmartOqulyq
+                </div>
             </div>
         </div>
     </div>
+
+    {# Важно: Добавление атрибутов к полям формы Django в forms.py все еще лучший способ #}
+    {# Чтобы применить класс 'form-input' к полям {{ form.username }} и {{ form.password }} #}
+    {# нужно настроить виджеты в файле forms.py твоего приложения. #}
+    {# Примерно так: #}
+    {# widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Имя пользователя'}) #}
+    {# widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Пароль'}) #}
 
 </body>
 </html>

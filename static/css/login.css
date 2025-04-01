@@ -1,157 +1,238 @@
-/* Обнуляем отступы */
-body, html {
+/* static/css/login_styles.css */
+
+/* Базовые стили и сброс */
+html, body {
+    height: 100%;
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    box-sizing: border-box;
+    background-color: #ffffff;
 }
 
-/* Основной контейнер, занимает весь экран */
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
+/* Основной контейнер страницы */
 .page-container {
     display: flex;
     flex-direction: column;
     height: 100vh;
 }
 
-/* Хедер фиксируется сверху */
-.header {
-    background-color: #ffffff;
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: left;
-    border-bottom: 1px solid #ddd;
-    min-height: 60px;
-}
-
-.logo {
-    height: 60px;
-    width: auto;
-}
-
-/* Контент */
-.main-content {
-    display: flex;
-    flex: 1;
-}
-
-/* Левая часть с картинкой */
+/* Левая секция с картинкой */
 .image-section {
-    width: 60%;
+    flex: 1;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+    background-color: #ebf8ff; /* Светло-голубой фон */
+    padding: 1rem;
     overflow: hidden;
 }
 
 .illustration {
+    max-width: 400px; /* Ограничение ширины картинки */
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    max-height: 80vh;
+    object-fit: contain;
 }
 
-/* Правая часть с формой */
+/* Правая секция с формой */
 .form-section {
-    width: 40%;
-    background: #09002b;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    padding: 20px;
+    justify-content: center;
+    background-color: #1e293b; /* Темно-синий/серый фон */
+    color: #ffffff;
+    padding: 2rem;
 }
 
-/* Заголовок */
-h2 {
-    color: white;
-    font-size: 24px;
-    margin-bottom: 20px;
+/* Обертка для контента формы */
+.form-wrapper {
+    width: 100%;
+    max-width: 24rem; /* 384px */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Центрируем все внутри обертки */
+}
+
+/* Контейнер логотипа */
+.logo-container {
+    text-align: center;
+    margin-bottom: 1.5rem; /* Уменьшил отступ для лого */
+}
+
+.logo-image {
+    /* Подбираем размер лого как на скриншоте */
+    height: 40px; /* Примерно */
+    width: auto;
+    border-radius: 0.25rem; /* Слегка скругленные углы у лого */
+    background-color: #ffffff; /* Если у лого нет фона, добавляем белый */
+    padding: 0.25rem; /* Небольшой отступ внутри фона лого */
+}
+
+/* Заголовок формы ('Kipy') */
+.form-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    text-align: center;
+    color: #ffffff;
 }
 
 /* Форма */
-form {
+.login-form {
+    width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    max-width: 400px;
+    align-items: center;
 }
 
-/* Одинаковый стиль для всех полей */
-input, select, button {
+/* Обертка для поля формы */
+.form-field {
+    width: 100%; /* Поле занимает всю ширину обертки */
+    margin-bottom: 1rem; /* Отступ между полями */
+}
+/* Отступ у последнего поля (пароль) перед кнопкой */
+.form-field:nth-of-type(2) {
+    margin-bottom: 1.5rem;
+}
+
+
+/* ---- ИЗМЕНЕНИЯ ДЛЯ ПОЛЕЙ ВВОДА И КНОПКИ (с явной высотой - Попытка 3) ---- */
+
+/* Общие стили для высоты и выравнивания */
+.form-input,
+.submit-button {
+    display: block;
     width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 5px;
-    font-size: 16px;
+    /* ЗАДАЕМ ЯВНУЮ ВЫСОТУ */
+    height: 48px !important; /* Ставим 48px. Добавлено !important для теста */
+
+    /* Паддинг только горизонтальный */
+    padding: 0 0.75rem; /* 0 сверху/снизу, 0.75rem слева/справа */
+
+    font-size: 1rem;
+    /* Стандартный line-height */
+    line-height: 1.5;
+    /* Очень важно! */
     box-sizing: border-box;
+    border-radius: 0.375rem;
+    vertical-align: middle;
+    margin: 0; /* Убираем возможные внешние отступы по умолчанию */
 }
 
-/* Кнопка */
-button {
-    background: blue;
-    color: white;
+
+/* Стилизация полей ввода (класс 'form-input' в forms.py) */
+.form-input {
+    background-color: #ffffff;
+    color: #1e293b;
+    border: 1px solid #adb5bd;
+    /* Текст должен центрироваться браузером внутри заданной высоты */
+}
+
+/* Стили для плейсхолдера внутри белого поля */
+.form-input::placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+/* Фокус для белых полей ввода */
+.form-input:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.3);
+}
+
+/* Кнопка отправки */
+.submit-button {
+    background-color: #3b82f6;
+    color: #ffffff;
+    font-weight: 600;
+    border: 1px solid transparent; /* Прозрачная рамка 1px */
     cursor: pointer;
-    font-size: 16px;
+    text-align: center;
+    transition: background-color 0.2s ease-in-out;
+     /* Для кнопки можно явно центрировать текст, если line-height не хватает */
+     /* Попробуй раскомментировать эти строки, если текст кнопки не по центру */
+    /* display: inline-flex; */
+    /* align-items: center; */
+    /* justify-content: center; */
 }
 
-button:hover {
-    background: darkblue;
+.submit-button:hover {
+    background-color: #2563eb;
+    border-color: transparent;
+}
+/* ---- КОНЕЦ ИЗМЕНЕНИЙ ---- */
+
+
+/* Сообщения об ошибках */
+.error-message {
+    color: #f87171;
+    font-size: 0.75rem;
+    font-style: italic;
+    margin-top: 0.25rem;
+    width: 100%;
+    text-align: left;
+    padding-left: 0.1rem;
 }
 
-/* Текст копирайта */
-.copyright {
-    color: white;
-    font-size: 12px;
-    margin-top: 10px;
+/* Ошибки, не связанные с полями */
+.non-field-errors {
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    text-align: center;
+    width: 100%;
 }
 
-/* Ссылки авторизации */
-.auth-links {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 15px;
+
+/* Контейнер для ссылок под формой */
+.links-container {
+    text-align: center;
+    margin-top: 1.5rem;
 }
 
-.auth-links a {
+/* Ссылка "Забыли пароль" */
+.forgot-password-link {
+    color: #60a5fa;
+    font-size: 0.875rem;
     text-decoration: none;
-    font-size: 16px;
 }
 
-.auth-links .forgot-password {
-    color: #007bff;
-    transition: color 0.3s ease-in-out;
+.forgot-password-link:hover {
+    text-decoration: underline;
 }
 
-.auth-links .forgot-password:hover {
-    color: #0056b3;
+/* Копирайт */
+.copyright {
+    margin-top: 2rem;
+    font-size: 0.875rem;
+    color: #94a3b8;
+    text-align: center;
 }
 
-.auth-links .register-btn {
-    background-color: #dc3545;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 5px;
-    transition: background-color 0.3s ease-in-out;
-}
-
-.auth-links .register-btn:hover {
-    background-color: #b02a37;
-}
-
-/* Адаптация для маленьких экранов */
-@media (max-width: 768px) {
-    .main-content {
-        flex-direction: column;
+/* Адаптивность (для экранов шире 768px) */
+@media (min-width: 768px) {
+    .page-container {
+        flex-direction: row;
     }
 
     .image-section {
-        width: 100%;
-        flex: 1;
+        padding: 0;
+        flex-basis: 60%; /* Картинка занимает 60% ширины */
     }
-
     .form-section {
-        width: 100%;
-        flex: 1;
+         flex-basis: 40%; /* Форма занимает 40% ширины */
     }
 }
