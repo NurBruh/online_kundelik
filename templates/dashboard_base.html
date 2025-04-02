@@ -113,33 +113,49 @@
 <body>
 
     <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 text-white" href="#">
-             <img alt="SmartOqulyq logo" class="me-2 align-middle" height="30" src="{% static 'image/image.png' %}" > {# Белый логотип #}
-        </a>
+         <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+                {# --- ИЗМЕНЕНО: Укажите правильный путь к логотипу --- #}
+                <img src="{% static 'image/image.png' %}" alt="SmartOqulyq logo" height="40" class="d-inline-block align-text-top me-2">
+            </a>
 
          {# Кнопка для показа/скрытия сайдбара на мобильных #}
          <button class="navbar-toggler d-md-none collapsed me-3" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
              <span class="navbar-toggler-icon"></span>
          </button>
-
-         {# Можно добавить поиск или другие элементы в хедер #}
-         {# <input class="form-control form-control-dark w-100 rounded-0 border-0" type="text" placeholder="Іздеу" aria-label="Search"> #}
-
-         {# Элементы справа: Имя пользователя и выход #}
-         <div class="navbar-nav ms-auto">
-            <div class="nav-item text-nowrap d-flex align-items-center">
-                <span class="nav-link text-white px-3 d-none d-sm-block">
-                     <i class="fas fa-user me-1"></i> {{ user.first_name|default:'Пайдаланушы' }} {{ user.last_name|default:'' }}
-                </span>
-                 {# Кнопка выхода #}
-                 <form action="{% url 'logout' %}" method="post">
-                    {% csrf_token %}
-                    <button type="submit" class="nav-link text-white px-3" style="background:none; border:none; cursor:pointer;">
-                        <i class="fas fa-sign-out-alt me-1"></i> Шығу
-                    </button>
-                </form>
-            </div>
-         </div>
+ {# --- НАЧАЛО ИЗМЕНЕНИЙ --- #}
+                    {% if user.is_authenticated %}
+                        {# --- Показываем ЭТО, если пользователь ВОШЕЛ --- #}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user me-1"></i>
+                                {{ user.first_name|default:user.username }} {# Показываем имя или username #}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
+                                {# Ссылка на Дашборд (пример) #}
+                                <li><a class="dropdown-item" href="{% url 'dashboard_schedule' %}">Дашборд</a></li>
+                                <li><a class="dropdown-item" href="#">Профиль</a></li> {# Замените # на URL профиля #}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    {# Форма для выхода #}
+                                    <form action="{% url 'logout' %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item">Шығу</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        {# --- Показываем ЭТО, если пользователь НЕ ВОШЕЛ --- #}
+                        <li class="nav-item">
+                            {# Кнопка входа #}
+                            <a href="{% url 'login' %}" class="btn btn-primary ms-lg-2 mt-2 mt-lg-0">Кіру</a>
+                        </li>
+                         <li class="nav-item">
+                            {# Кнопка регистрации (добавлено) #}
+                            <a href="{% url 'register' %}" class="btn btn-outline-primary ms-lg-2 mt-2 mt-lg-0">Тіркелу</a>
+                        </li>
+                    {% endif %}
+                    {# --- КОНЕЦ ИЗМЕНЕНИЙ --- #}
     </header>
 
     <div class="container-fluid">
@@ -213,7 +229,7 @@
                 <footer class="pt-4 my-md-5 pt-md-5 border-top">
                     <div class="row">
                         <div class="col-12 col-md text-center text-md-start">
-                            <img class="mb-2" src="{% static 'image/logo.png' %}" alt="" width="24" height="19">
+                            <img class="mb-2" src="{% static 'image/image.png' %}" alt="" width="24" height="19">
                             <small class="d-block mb-3 text-muted">© {% now "Y" %} SmartOqulyq</small>
                         </div>
                         <div class="col-6 col-md">
@@ -225,17 +241,9 @@
                             </ul>
                         </div>
                         <div class="col-6 col-md">
-                            <h5>Ресурстар</h5>
-                            <ul class="list-unstyled text-small">
-                                <li class="mb-1"><a class="link-secondary text-decoration-none" href="#">Нұсқаулық</a></li>
-                                <li class="mb-1"><a class="link-secondary text-decoration-none" href="#">API</a></li>
-                            </ul>
-                        </div>
-                        <div class="col-6 col-md">
                             <h5>Біз туралы</h5>
                             <ul class="list-unstyled text-small">
-                                <li class="mb-1"><a class="link-secondary text-decoration-none" href="{% url 'about_us' %}">Компания</a></li>
-                                <li class="mb-1"><a class="link-secondary text-decoration-none" href="#">Блог</a></li>
+                                <li class="mb-1"><a class="link-secondary text-decoration-none" href="{% url 'about_us' %}">Быз туралы</a></li>
                                 <li class="mb-1"><a class="link-secondary text-decoration-none" href="#">Байланыс</a></li>
                             </ul>
                         </div>

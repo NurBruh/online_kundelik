@@ -1,301 +1,260 @@
 {% load static %}
-<html lang="en">
+<!DOCTYPE html> {# Added doctype #}
+<html lang="kk"> {# Changed lang to kk #}
  <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>
-   SmartOqulyq
-  </title>
-  <script src="https://cdn.tailwindcss.com">
-  </script>
+  <title>SmartOqulyq - Мұғалім Кестесі</title> {# Changed title #}
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+  <!-- Font Awesome (опционально) -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&amp;display=swap" rel="stylesheet"/>
+
+  <!-- Google Font Roboto -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+
+  <!-- Кастомные стили -->
+  <style>
+    body {
+        font-family: 'Roboto', sans-serif;
+        background-color: #f8f9fa; /* Аналог bg-gray-100 */
+        padding-top: 70px; /* Отступ для фикс. навбара */
+    }
+    .navbar {
+         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); /* Аналог shadow-md */
+    }
+    /* Стилизация шапки таблицы */
+    .schedule-table thead {
+        background-color: #e9ecef; /* Аналог bg-gray-200 */
+        color: #495057; /* Аналог text-gray-600 */
+        font-size: 0.85rem; /* Аналог text-sm */
+        text-transform: uppercase; /* Аналог uppercase */
+    }
+    /* Фон для навигации по датам */
+    .date-nav {
+        background-color: #0a58ca; /* Темнее основного синего, аналог bg-blue-800 */
+        color: white;
+    }
+    .date-nav .btn {
+        color: white;
+        font-weight: bold;
+    }
+    .date-nav .btn:hover {
+         background-color: rgba(255, 255, 255, 0.15);
+    }
+    /* Убираем подчеркивание у ссылок в навигации по умолчанию */
+    .navbar-nav .nav-link {
+        text-decoration: none;
+    }
+    .navbar-brand:hover,
+    .navbar-nav .nav-link:hover {
+         color: var(--bs-primary) !important; /* Синий цвет при наведении */
+    }
+    .profile-links a {
+        text-decoration: none;
+    }
+    .profile-links a:hover {
+        text-decoration: underline;
+    }
+  </style>
+
  </head>
- <body class="font-roboto bg-gray-100">
-  <header class="bg-white shadow-md">
-   <div class="container mx-auto flex justify-between items-center py-4 px-6">
-    <div class="flex items-center">
-     <img alt="SmartOqulyq logo" class="h-10 w-10" height="50" src="https://storage.googleapis.com/a1aa/image/jWecUm5gGauvb1p-Ee66PjV4MLHxVDHv4bim0uU6fAc.jpg" width="50"/>
-     <span class="text-blue-600 text-2xl font-bold ml-2">
-      SmartOqulyq
-     </span>
-    </div>
-    <nav class="space-x-4 text-blue-600">
-     <a class="hover:underline" href="#">
-      Менің кестем
-     </a>
-     <a class="hover:underline" href="#">
-      Үй тапсырмалары
-     </a>
-     <a class="hover:underline" href="#">
-      Мұғаліммен байланыс
-     </a>
-     <a class="hover:underline" href="#">
-      Бағалар
-     </a>
-     <a class="hover:underline" href="#">
-      БЖБ/ТЖБ
-     </a>
+ <body>
+
+  <!-- Header (Navbar Bootstrap) -->
+  <header class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+   <div class="container"> {# container mx-auto px-6 -> container #}
+    <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}"> {# flex items-center #}
+     {# Используйте static для логотипа #}
+     <img alt="SmartOqulyq logo" height="40" src="{% static 'image/logo.png' %}" width="40" class="me-2"> {# h-10 w-10 -> height/width, ml-2 -> me-2 #}
+     <span class="fs-4 fw-bold text-primary">SmartOqulyq</span> {# text-blue-600 text-2xl font-bold -> text-primary fs-4 fw-bold #}
+    </a>
+    {# Основное меню сайта (можно добавить toggler) #}
+    <nav class="d-none d-lg-flex gap-4"> {# space-x-4 -> gap-4, text-blue-600 убран, стили у ссылок #}
+     <a class="nav-link" href="#">Менің кестем</a>
+     <a class="nav-link" href="#">Үй тапсырмалары</a>
+     <a class="nav-link" href="#">Мұғаліммен байланыс</a>
+     <a class="nav-link" href="#">Бағалар</a>
+     <a class="nav-link" href="#">БЖБ/ТЖБ</a>
     </nav>
+    {# Можно добавить кнопку выхода или профиля справа #}
+    <div class="ms-auto">
+         <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm">Шығу</a>
+    </div>
    </div>
   </header>
-  <main class="container mx-auto mt-8 px-6">
-   <div class="text-center">
-    <img alt="User profile picture" class="mx-auto mb-4" height="100" src="https://storage.googleapis.com/a1aa/image/-911D7WVgcTkoFolTgsRAE6GJ6tf8cXzMEiuIa3NbCI.jpg" width="100"/>
-    <h1 class="text-2xl font-bold">
-     Бисанов Бауыржан
-    </h1>
-    <p class="text-gray-600">
-     Мұғалім
-    </p>
-    <div class="flex justify-center space-x-4 mt-2">
-     <a class="text-blue-600 hover:underline" href="#">
-      Кесте құрастыру
-     </a>
-     <a class="text-blue-600 hover:underline" href="#">
-      Профиль
-     </a>
+
+  <main class="container mt-5 mb-5"> {# container mx-auto mt-8 px-6 -> container mt-5 mb-5 #}
+   <div class="text-center mb-5"> {# mt-8 -> mb-5 #}
+    {# Используйте static для аватара #}
+    <img alt="User profile picture" class="img-thumbnail rounded-circle mx-auto mb-3" height="100" src="{% static 'image/teacher-avatar.png' %}" width="100"> {# mb-4 -> mb-3, добавил img-thumbnail #}
+    <h1 class="h4 fw-bold">Бисанов Бауыржан</h1> {# text-2xl -> h4 #}
+    <p class="text-muted">Мұғалім</p> {# text-gray-600 -> text-muted #}
+    <div class="d-flex justify-content-center gap-4 mt-3 profile-links"> {# flex justify-center space-x-4 mt-2 -> d-flex justify-content-center gap-4 mt-3 #}
+     <a class="text-primary" href="#">Кесте құрастыру</a> {# text-blue-600 hover:underline -> text-primary #}
+     <a class="text-primary" href="#">Профиль</a>
     </div>
    </div>
-   <section class="mt-8">
-    <div class="bg-blue-600 text-white p-4 rounded-t-lg">
-     <h2 class="text-xl font-bold">
-      Сабақ кестесі
-     </h2>
-    </div>
-    <div class="bg-white shadow-md rounded-b-lg overflow-hidden">
-     <div class="flex justify-between bg-blue-800 text-white p-2">
-      <button class="text-lg font-bold">
-       ◀ Артқа
-      </button>
-      <span class="text-lg font-bold">
-       25 Ақпан 2025
-      </span>
-      <button class="text-lg font-bold">
-       Келесі ▶
-      </button>
-     </div>
-     <table class="min-w-full bg-white">
-      <thead>
-       <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-        <th class="py-3 px-6 text-left">
-         №
-        </th>
-        <th class="py-3 px-6 text-left">
-         Пән
-        </th>
-        <th class="py-3 px-6 text-left">
-         Уақыт
-        </th>
-        <th class="py-3 px-6 text-left">
-         Тақырып
-        </th>
-        <th class="py-3 px-6 text-left">
-         Статус
-        </th>
-        <th class="py-3 px-6 text-left">
-         Үй тапсырма
-        </th>
-       </tr>
-      </thead>
-      <tbody class="text-gray-600 text-sm font-light">
-       <tr class="border-b border-gray-200 hover:bg-gray-100">
-        <td class="py-3 px-6 text-left">
-         1
-        </td>
-        <td class="py-3 px-6 text-left">
-         Математика
-         <br/>
-         Қаз
-         <br/>
-         5 "А" сынып
-        </td>
-        <td class="py-3 px-6 text-left">
-         8:00-8:40
-        </td>
-        <td class="py-3 px-6 text-left">
-         Жай бөлшектер
-        </td>
-        <td class="py-3 px-6 text-left">
-         <button class="bg-blue-600 text-white px-4 py-1 rounded">
-          Тексеру
-         </button>
-        </td>
-        <td class="py-3 px-6 text-left">
-         №6, 7 тапсырма 79 бет
-        </td>
-       </tr>
-       <tr class="border-b border-gray-200 hover:bg-gray-100">
-        <td class="py-3 px-6 text-left">
-         2
-        </td>
-        <td class="py-3 px-6 text-left">
-         Алгебра
-         <br/>
-         Қаз
-         <br/>
-         8 "Б" сынып
-        </td>
-        <td class="py-3 px-6 text-left">
-         8:50-9:45
-        </td>
-        <td class="py-3 px-6 text-left">
-         Мәтінді есептерді шығару
-        </td>
-        <td class="py-3 px-6 text-left">
-         <button class="bg-blue-600 text-white px-4 py-1 rounded">
-          Тексеру
-         </button>
-        </td>
-        <td class="py-3 px-6 text-left">
-         №7 тапсырма 92 бет
-        </td>
-       </tr>
-       <tr class="border-b border-gray-200 hover:bg-gray-100">
-        <td class="py-3 px-6 text-left">
-         3
-        </td>
-        <td class="py-3 px-6 text-left">
-         Математика
-         <br/>
-         Қаз
-         <br/>
-         5 "А" сынып
-        </td>
-        <td class="py-3 px-6 text-left">
-         9:50-10:35
-        </td>
-        <td class="py-3 px-6 text-left">
-         Жай бөлшектер
-        </td>
-        <td class="py-3 px-6 text-left">
-         <button class="bg-blue-600 text-white px-4 py-1 rounded">
-          Тексеру
-         </button>
-        </td>
-        <td class="py-3 px-6 text-left">
-         №6, 7 тапсырма 79 бет
-        </td>
-       </tr>
-       <tr class="border-b border-gray-200 hover:bg-gray-100">
-        <td class="py-3 px-6 text-left">
-         4
-        </td>
-        <td class="py-3 px-6 text-left">
-         Геометрия
-         <br/>
-         Қаз
-         <br/>
-         8 "А" сынып
-        </td>
-        <td class="py-3 px-6 text-left">
-         10:40-11:25
-        </td>
-        <td class="py-3 px-6 text-left">
-         Төртбұрыштар мен
-         <br/>
-         үшбұрыштардың аудандары
-        </td>
-        <td class="py-3 px-6 text-left">
-         <button class="bg-blue-600 text-white px-4 py-1 rounded">
-          Тексеру
-         </button>
-        </td>
-        <td class="py-3 px-6 text-left">
-         №5 тапсырма 82 бет
-        </td>
-       </tr>
-       <tr class="border-b border-gray-200 hover:bg-gray-100">
-        <td class="py-3 px-6 text-left">
-         5
-        </td>
-        <td class="py-3 px-6 text-left">
-         Геометрия
-         <br/>
-         Қаз
-         <br/>
-         8 "Б" сынып
-        </td>
-        <td class="py-3 px-6 text-left">
-         11:40-12:25
-        </td>
-        <td class="py-3 px-6 text-left">
-         Төртбұрыштар мен
-         <br/>
-         үшбұрыштардың аудандары
-        </td>
-        <td class="py-3 px-6 text-left">
-         <button class="bg-blue-600 text-white px-4 py-1 rounded">
-          Тексеру
-         </button>
-        </td>
-        <td class="py-3 px-6 text-left">
-         №5 тапсырма 82 бет
-        </td>
-       </tr>
-       <tr class="border-b border-gray-200 hover:bg-gray-100">
-        <td class="py-3 px-6 text-left">
-         6
-        </td>
-        <td class="py-3 px-6 text-left">
-         Математика
-         <br/>
-         Қаз
-         <br/>
-         5 "А" сынып
-        </td>
-        <td class="py-3 px-6 text-left">
-         12:30-13:15
-        </td>
-        <td class="py-3 px-6 text-left">
-         Жай бөлшектер
-        </td>
-        <td class="py-3 px-6 text-left">
-         <button class="bg-blue-600 text-white px-4 py-1 rounded">
-          Тексеру
-         </button>
-        </td>
-        <td class="py-3 px-6 text-left">
-         №6, 7 тапсырма 79 бет
-        </td>
-       </tr>
-      </tbody>
-     </table>
-    </div>
+
+   <section>
+        {# Обертка карточки для расписания #}
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white p-3"> {# bg-blue-600 text-white p-4 rounded-t-lg -> card-header bg-primary text-white p-3 #}
+             <h2 class="h5 mb-0 fw-bold">Сабақ кестесі</h2> {# text-xl -> h5 #}
+            </div>
+
+            {# Навигация по датам #}
+            <div class="date-nav p-2 d-flex justify-content-between align-items-center"> {# flex justify-between bg-blue-800 text-white p-2 -> date-nav p-2 d-flex ... #}
+              <button class="btn btn-sm"> {/* text-lg font-bold -> убрали, стили через CSS */}
+               <i class="fas fa-chevron-left me-1"></i> Артқа
+              </button>
+              <span class="fw-bold">25 Ақпан 2025</span> {# text-lg font-bold -> fw-bold #}
+              <button class="btn btn-sm">
+               Келесі <i class="fas fa-chevron-right ms-1"></i>
+              </button>
+            </div>
+
+            {# Адаптивная таблица #}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover schedule-table mb-0"> {# min-w-full bg-white -> table table-striped table-hover mb-0 #}
+                  <thead> {# thead классы перенесены в <style> #}
+                   <tr>
+                    <th class="py-3 px-4">№</th> {# px-6 -> px-4 #}
+                    <th class="py-3 px-4">Пән</th>
+                    <th class="py-3 px-4">Уақыт</th>
+                    <th class="py-3 px-4">Тақырып</th>
+                    <th class="py-3 px-4">Статус</th>
+                    <th class="py-3 px-4">Үй тапсырма</th>
+                   </tr>
+                  </thead>
+                  <tbody> {# text-gray-600 text-sm font-light -> стили для ячеек, если нужно #}
+                   {# Пример строки таблицы с классами Bootstrap #}
+                   <tr > {# border-b border-gray-200 hover:bg-gray-100 -> убрали, есть table-striped/hover #}
+                    <td class="py-3 px-4 align-middle">1</td> {# text-left убрали, по умолчанию #}
+                    <td class="py-3 px-4 align-middle">
+                        Математика <br/>
+                        <span class="small text-muted">Қаз</span> <br/>
+                        <span class="small text-muted">5 "А" сынып</span> {# Добавлены классы small text-muted #}
+                    </td>
+                    <td class="py-3 px-4 align-middle">8:00-8:40</td>
+                    <td class="py-3 px-4 align-middle">Жай бөлшектер</td>
+                    <td class="py-3 px-4 align-middle">
+                        {# Используем кнопку Bootstrap #}
+                         <button class="btn btn-primary btn-sm">Тексеру</button> {# bg-blue-600 text-white px-4 py-1 rounded -> btn btn-primary btn-sm #}
+                    </td>
+                    <td class="py-3 px-4 align-middle">№6, 7 тапсырма 79 бет</td>
+                   </tr>
+                   {# Повторите структуру для остальных строк #}
+                    <tr>
+                    <td class="py-3 px-4 align-middle">2</td>
+                    <td class="py-3 px-4 align-middle">
+                        Алгебра <br/>
+                        <span class="small text-muted">Қаз</span> <br/>
+                        <span class="small text-muted">8 "Б" сынып</span>
+                    </td>
+                    <td class="py-3 px-4 align-middle">8:50-9:45</td>
+                    <td class="py-3 px-4 align-middle">Мәтінді есептерді шығару</td>
+                    <td class="py-3 px-4 align-middle">
+                         <button class="btn btn-primary btn-sm">Тексеру</button>
+                    </td>
+                    <td class="py-3 px-4 align-middle">№7 тапсырма 92 бет</td>
+                   </tr>
+                    <tr>
+                    <td class="py-3 px-4 align-middle">3</td>
+                    <td class="py-3 px-4 align-middle">
+                        Математика <br/>
+                        <span class="small text-muted">Қаз</span> <br/>
+                        <span class="small text-muted">5 "А" сынып</span>
+                    </td>
+                    <td class="py-3 px-4 align-middle">9:50-10:35</td>
+                    <td class="py-3 px-4 align-middle">Жай бөлшектер</td>
+                    <td class="py-3 px-4 align-middle">
+                         <button class="btn btn-primary btn-sm">Тексеру</button>
+                    </td>
+                    <td class="py-3 px-4 align-middle">№6, 7 тапсырма 79 бет</td>
+                   </tr>
+                    <tr>
+                    <td class="py-3 px-4 align-middle">4</td>
+                    <td class="py-3 px-4 align-middle">
+                        Геометрия <br/>
+                        <span class="small text-muted">Қаз</span> <br/>
+                        <span class="small text-muted">8 "А" сынып</span>
+                    </td>
+                    <td class="py-3 px-4 align-middle">10:40-11:25</td>
+                    <td class="py-3 px-4 align-middle">
+                         Төртбұрыштар мен <br/> үшбұрыштардың аудандары
+                    </td>
+                    <td class="py-3 px-4 align-middle">
+                         <button class="btn btn-primary btn-sm">Тексеру</button>
+                    </td>
+                    <td class="py-3 px-4 align-middle">№5 тапсырма 82 бет</td>
+                   </tr>
+                   <tr>
+                    <td class="py-3 px-4 align-middle">5</td>
+                    <td class="py-3 px-4 align-middle">
+                        Геометрия <br/>
+                        <span class="small text-muted">Қаз</span> <br/>
+                        <span class="small text-muted">8 "Б" сынып</span>
+                    </td>
+                    <td class="py-3 px-4 align-middle">11:40-12:25</td>
+                    <td class="py-3 px-4 align-middle">
+                         Төртбұрыштар мен <br/> үшбұрыштардың аудандары
+                    </td>
+                    <td class="py-3 px-4 align-middle">
+                         <button class="btn btn-primary btn-sm">Тексеру</button>
+                    </td>
+                    <td class="py-3 px-4 align-middle">№5 тапсырма 82 бет</td>
+                   </tr>
+                   <tr>
+                    <td class="py-3 px-4 align-middle">6</td>
+                    <td class="py-3 px-4 align-middle">
+                        Математика <br/>
+                        <span class="small text-muted">Қаз</span> <br/>
+                        <span class="small text-muted">5 "А" сынып</span>
+                    </td>
+                    <td class="py-3 px-4 align-middle">12:30-13:15</td>
+                    <td class="py-3 px-4 align-middle">Жай бөлшектер</td>
+                    <td class="py-3 px-4 align-middle">
+                         <button class="btn btn-primary btn-sm">Тексеру</button>
+                    </td>
+                    <td class="py-3 px-4 align-middle">№6, 7 тапсырма 79 бет</td>
+                   </tr>
+                  </tbody>
+                 </table>
+            </div> {# Конец table-responsive #}
+        </div> {# Конец card #}
    </section>
   </main>
-  <footer class="bg-gray-800 text-white mt-8">
-   <div class="container mx-auto py-6 px-6">
-    <div class="flex justify-between items-center">
-     <div class="flex items-center">
-      <img alt="SmartOqulyq logo" class="h-10 w-10" height="50" src="https://storage.googleapis.com/a1aa/image/jWecUm5gGauvb1p-Ee66PjV4MLHxVDHv4bim0uU6fAc.jpg" width="50"/>
-      <div class="ml-4">
-       <p>
-        SmartOqulyq ЖШС
-       </p>
-       <p>
-        Қазақстан Республикасы, 010600, Астана қ., Жамбыл ауданы
-       </p>
+
+  <footer class="bg-dark text-white mt-5"> {# bg-gray-800 -> bg-dark, mt-8 -> mt-5 #}
+   <div class="container py-4"> {# py-6 px-6 -> py-4 #}
+    <div class="row align-items-center"> {# flex justify-between items-center -> row align-items-center #}
+     <div class="col-md-7 mb-3 mb-md-0"> {# Левая часть #}
+      <div class="d-flex align-items-center">
+       {# Используйте static для логотипа #}
+       <img alt="SmartOqulyq logo" height="40" src="{% static 'image/logo-white.png' %}" width="40" class="me-3"> {# h-10 w-10 -> height/width, ml-4 -> me-3 #}
+       <div class="small"> {# Уменьшил размер текста #}
+        <p class="mb-1 fw-bold">SmartOqulyq ЖШС</p>
+        <p class="mb-0 text-white-50">Қазақстан Республикасы, 010600, Астана қ., ...</p> {# Добавлен text-white-50 #}
+       </div>
       </div>
      </div>
-     <div class="space-y-2">
-      <a class="block hover:underline" href="#">
-       Біз туралы
-      </a>
-      <a class="block hover:underline" href="#">
-       Ұсыныстар
-      </a>
-      <a class="block hover:underline" href="#">
-       Блог
-      </a>
+     <div class="col-md-5 text-center text-md-end small"> {# Правая часть, space-y-2 -> убрали, ссылки просто текст #}
+      <a class="d-block text-white-50 text-decoration-none mb-1" href="#">Біз туралы</a> {# block hover:underline -> d-block ... mb-1 #}
+      <a class="d-block text-white-50 text-decoration-none mb-1" href="#">Ұсыныстар</a>
+      <a class="d-block text-white-50 text-decoration-none" href="#">Блог</a>
      </div>
     </div>
-    <div class="text-center mt-4">
-     <p>
-      Авторлық құқық © 2025 SmartOqulyq
-     </p>
+    <div class="text-center mt-4 small text-white-50"> {# text-center mt-4 -> text-center mt-4 small text-white-50 #}
+     <p class="mb-0">Авторлық құқық © {% now "Y" %} SmartOqulyq</p> {# Обновлен год #}
     </div>
    </div>
   </footer>
+
+  <!-- Bootstrap Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
  </body>
 </html>

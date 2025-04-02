@@ -4,31 +4,26 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Страница входа</title>
-    {# Убрали Tailwind CDN #}
-    {# Оставили Font Awesome, если он нужен для иконок (хотя в форме их нет) #}
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
-    {# Ссылка на твой собственный CSS файл #}
     <link href="{% static 'css/login.css' %}" rel="stylesheet"/> {# Укажи правильный путь к своему CSS #}
 </head>
 <body>
     <div class="page-container">
-        <!-- Левая сторона: Изображение -->
         <div class="image-section">
             <img
                 alt="3D иллюстрация человека в костюме с ноутбуком"
                 class="illustration"
-                src="https://storage.googleapis.com/a1aa/image/4iE_cdHmHOQiO8bVtzWtOdsPDJi4qnrzNZeeuDCpmhA.jpg"
+                src="{% static 'image/баука.jpg' %}"
             />
         </div>
 
-        <!-- Правая сторона: Форма -->
         <div class="form-section">
             <div class="form-wrapper">
                 <div class="logo-container">
                     <img
                         alt="Логотип SmartOqulyq"
                         class="logo-image"
-                        src="https://storage.googleapis.com/a1aa/image/9KiFmNQAcgoUiO5nCXeK5sIcHT6L7Pzsom_mhYJs-yw.jpg"
+                        src="{% static 'image/image.png' %}"
                     />
                 </div>
                 <h1 class="form-title">Kipy</h1>
@@ -37,7 +32,6 @@
                  {% csrf_token %}
 
                  <div class="form-field">
-                     {# Можно добавить <label>, но оставим пока как было, стилизуем input #}
                      {{ form.username }}
                      {% if form.username.errors %}
                          <p class="error-message">{{ form.username.errors|striptags }}</p>
@@ -45,7 +39,6 @@
                  </div>
 
                  <div class="form-field">
-                      {# Можно добавить <label> #}
                      {{ form.password }}
                       {% if form.password.errors %}
                          <p class="error-message">{{ form.password.errors|striptags }}</p>
@@ -75,13 +68,5 @@
             </div>
         </div>
     </div>
-
-    {# Важно: Добавление атрибутов к полям формы Django в forms.py все еще лучший способ #}
-    {# Чтобы применить класс 'form-input' к полям {{ form.username }} и {{ form.password }} #}
-    {# нужно настроить виджеты в файле forms.py твоего приложения. #}
-    {# Примерно так: #}
-    {# widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Имя пользователя'}) #}
-    {# widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Пароль'}) #}
-
 </body>
 </html>

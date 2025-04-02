@@ -4,165 +4,269 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartOqulyq</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>SmartOqulyq - Басты бет</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+
+    <!-- Ваши кастомные стили -->
     <style>
-        /* Фон суретін қосу */
         body.body-with-bg {
-            background-image: url('static/image/BG-image.jpg');
-
-            background-size: cover; /* Бетті толық жабу */
-            background-position: center; /* Орталау */
-            background-repeat: no-repeat; /* Қайталамау */
-            background-attachment: fixed; /* Фонды орнында қалдыру */
+            background-image: url("{% static 'image/BG-image.jpg' %}"); /* Используем static */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            padding-top: 70px; /* Увеличил отступ под навбар */
+        }
+        .content-section-transparent {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding-top: 4rem;
+            padding-bottom: 4rem;
+        }
+        .about-section {
+            background-color: #e7f1ff;
+            padding-top: 2.5rem;
+            padding-bottom: 2.5rem;
+        }
+        .cta-section {
+            background-color: #0a2a66;
+            color: white;
+            padding-top: 4rem;
+            padding-bottom: 4rem;
+        }
+        .service-card-img {
+            height: 200px;
+            object-fit: cover;
+        }
+        .navbar-nav .nav-link {
+            text-decoration: none;
+        }
+        .navbar-brand:hover,
+        .navbar-nav .nav-link:hover {
+             color: var(--bs-primary) !important;
+        }
+        /* Стили для выпадающего меню пользователя */
+        .dropdown-menu {
+            min-width: auto; /* Чтобы меню не было слишком широким */
         }
 
-        nav, .content-section, footer {
-            position: relative; /* overlay қолдансаңыз қажет */
-            z-index: 1; /* overlay-дан жоғары тұруын қамтамасыз ету */
-        }
     </style>
 </head>
 <body class="body-with-bg">
-    <!-- Navigation Bar -->
-    <nav class="flex justify-between items-center p-4 bg-white shadow-md content-section">
-        <div class="flex items-center">
-            <img alt="SmartOqulyq logo" class="h-12 w-12" src="https://storage.googleapis.com/a1aa/image/6RYU1YtcRiVa58_RlKSR01TA6NS8tPu0uP8uszotNy4.jpg">
-            <span class="text-2xl font-bold text-blue-700 ml-2">SmartOqulyq</span>
+    <!-- Navigation Bar (Bootstrap) -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm fixed-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+                {# --- ИЗМЕНЕНО: Укажите правильный путь к логотипу --- #}
+                <img src="{% static 'image/image.png' %}" alt="SmartOqulyq logo" height="40" class="d-inline-block align-text-top me-2">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active fw-bold{% endif %}" aria-current="page" href="{% url 'home' %}">Басты бет</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'about_us' %}active fw-bold{% endif %}" href="{% url 'about_us' %}">Біз туралы</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'recommendations' %}active fw-bold{% endif %}" href="{% url 'recommendations' %}">Ұсыныстар</a>
+                    </li>
+
+                    {# --- НАЧАЛО ИЗМЕНЕНИЙ --- #}
+                    {% if user.is_authenticated %}
+                        {# --- Показываем ЭТО, если пользователь ВОШЕЛ --- #}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user me-1"></i>
+                                {{ user.first_name|default:user.username }} {# Показываем имя или username #}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
+                                {# Ссылка на Дашборд (пример) #}
+                                <li><a class="dropdown-item" href="{% url 'dashboard_schedule' %}">Дашборд</a></li>
+                                <li><a class="dropdown-item" href="#">Профиль</a></li> {# Замените # на URL профиля #}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    {# Форма для выхода #}
+                                    <form action="{% url 'logout' %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item">Шығу</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        {# --- Показываем ЭТО, если пользователь НЕ ВОШЕЛ --- #}
+                        <li class="nav-item">
+                            {# Кнопка входа #}
+                            <a href="{% url 'login' %}" class="btn btn-primary ms-lg-2 mt-2 mt-lg-0">Кіру</a>
+                        </li>
+                         <li class="nav-item">
+                            {# Кнопка регистрации (добавлено) #}
+                            <a href="{% url 'register' %}" class="btn btn-outline-primary ms-lg-2 mt-2 mt-lg-0">Тіркелу</a>
+                        </li>
+                    {% endif %}
+                    {# --- КОНЕЦ ИЗМЕНЕНИЙ --- #}
+
+                </ul>
+            </div>
         </div>
-        <div class="space-x-4">
-            <a class="text-blue-700" href="{% url 'home' %}">Басты бет</a>
-<a class="text-gray-700" href="{% url 'about_us' %}">Біз туралы</a>
-<a class="text-gray-700" href="{% url 'recommendations' %}">Ұсыныстар</a>
-        </div>
-        <button class="bg-blue-700 text-white px-4 py-2 rounded"><a href="{% url 'login' %}" class="bg-blue-700 text-white px-4 py-2 rounded">Кіру</a></button>
     </nav>
 
     <!-- Hero Section -->
-    <div class="bg-white/90 backdrop-blur-sm py-16 content-section">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row items-center">
-                <div class="md:w-7/12 lg:w-3/5 mb-10 md:mb-0 md:pr-8 lg:pr-12">
-                    <h1 class="text-4xl font-bold text-gray-800 mb-4">Білімге қадам – SmartOqulyq-пен бірге!</h1>
-                    <p class="text-xl text-gray-700 mb-8">
+    <div class="content-section-transparent">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-7 mb-5 mb-lg-0">
+                    <h1 class="display-5 fw-bold text-dark mb-4">Білімге қадам – SmartOqulyq-пен бірге!</h1>
+                    <p class="lead text-secondary mb-5">
                         <strong>SmartOqulyq</strong> – мектеп оқушыларына арналған инновациялық білім беру платформасы. Мұнда сіз өзіңіздің оқу игеріміңізді бақылай аласыз, тесттер мен бақылау жұмыстарын оңай тапсырасыз және білім алуды барынша ыңғайлы етесіз.
                     </p>
-                    <div class="flex flex-wrap gap-8 mb-8">
+                    <div class="d-flex flex-wrap gap-5 mb-5">
                         <div>
-                            <span class="text-3xl font-bold text-blue-700">1000+</span>
-                            <p class="text-gray-600">мектеп қолданып жатыр</p>
+                            <span class="fs-2 fw-bold text-primary">1000+</span>
+                            <p class="text-muted mb-0">мектеп қолданып жатыр</p>
                         </div>
                         <div>
-                            <span class="text-3xl font-bold text-blue-700">10K+</span>
-                            <p class="text-gray-600">тіркелген оқушы</p>
+                            <span class="fs-2 fw-bold text-primary">10K+</span>
+                            <p class="text-muted mb-0">тіркелген оқушы</p>
                         </div>
                     </div>
-                    <button class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-300">
+                    <a href="{% url 'register' %}" class="btn btn-primary btn-lg">
                         Бастау
-                    </button>
+                    </a>
                 </div>
-                <div class="md:w-5/12 lg:w-2/5">
-                    <img src="https://storage.googleapis.com/a1aa/image/xP6k7wJBUUj8fBLDRV-aI6quv18SGeQpRoIqOSFg4Sk.jpg" alt="Students learning with SmartOqulyq" class="rounded-lg shadow-xl w-full max-w-md mx-auto">
+                <div class="col-lg-5 text-center">
+                    <img src="https://storage.googleapis.com/a1aa/image/xP6k7wJBUUj8fBLDRV-aI6quv18SGeQpRoIqOSFg4Sk.jpg" alt="Students learning with SmartOqulyq" class="img-fluid rounded shadow-lg">
                 </div>
             </div>
         </div>
     </div>
 
     <!-- About Section -->
-    <div class="bg-blue-50 py-10 content-section">
-        <div class="container mx-auto flex flex-col md:flex-row items-center justify-between px-5">
-            <div class="md:w-1/2">
-                <img alt="A young boy with glasses and a bow tie standing in front of a chalkboard with mathematical equations" class="rounded-lg shadow-lg mx-auto" height="300" src="https://storage.googleapis.com/a1aa/image/dvSJHnkUABBDtBbBCPE7u1VJU7PsC4nfZHHIt_iLqWk.jpg" width="400">
-            </div>
-            <div class="md:w-1/2 mt-5 md:mt-0 md:ml-10">
-                <h2 class="text-lg font-semibold">Біз туралы</h2>
-                <h1 class="text-2xl font-bold mt-2">SmartOqulyq платформасының тарихы</h1>
-                <p class="mt-4 text-gray-700">SmartOqulyq — Қазақстандағы мектеп оқушыларына арналған білім беру платформасы, оқу және тестілеуді жеңілдету үшін құрылған.</p>
-                <button class="mt-6 bg-blue-600 text-white py-2 px-4 rounded-lg shadow-lg"><a href="{% url 'about_us' %}" class="mt-6 bg-blue-600 text-white py-2 px-4 rounded-lg shadow-lg inline-block">Толығырақ</a></button>
+    <div class="about-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center">
+                    <img alt="A young boy with glasses..." class="img-fluid rounded shadow-lg" height="300" src="https://storage.googleapis.com/a1aa/image/dvSJHnkUABBDtBbBCPE7u1VJU7PsC4nfZHHIt_iLqWk.jpg" width="400">
+                </div>
+                <div class="col-md-6 mt-4 mt-md-0">
+                    <h2 class="text-uppercase small fw-semibold text-secondary">Біз туралы</h2>
+                    <h3 class="h2 fw-bold mt-2 text-dark">SmartOqulyq платформасының тарихы</h3>
+                    <p class="mt-4 text-secondary">SmartOqulyq — Қазақстандағы мектеп оқушыларына арналған білім беру платформасы, оқу және тестілеуді жеңілдету үшін құрылған.</p>
+                    <a href="{% url 'about_us' %}" class="btn btn-primary mt-4">Толығырақ</a>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Features Section -->
-    <div class="bg-white/90 backdrop-blur-sm py-10 content-section">
-        <div class="container mx-auto flex flex-col md:flex-row items-center justify-between px-5">
-            <div class="md:w-1/2">
-                <h2 class="text-lg font-semibold">Біздің артықшылықтарымыз</h2>
-                <h1 class="text-2xl font-bold mt-2">Басқа платформалардан ерекшеленеміз</h1>
-                <p class="mt-4 text-gray-700">Біз оқушыларға, ата-аналарға және мұғалімдерге мықты қолдау көрсетуді мақсат еткен платформа ретінде жұмысты жалғастырамыз.</p>
-                <ul class="mt-4 text-gray-700 list-disc list-inside">
-                    <li>Тиімді бақылау</li>
-                    <li>Жоғары сапалы материалдар</li>
-                    <li>Пайдаланушыға бағдарланған дизайн</li>
-                </ul>
-            </div>
-            <div class="md:w-1/2 mt-5 md:mt-0 md:ml-10">
-                <img alt="A bookshelf filled with various books" class="rounded-lg shadow-lg mx-auto" height="300" src="https://storage.googleapis.com/a1aa/image/wfAt8xCV7snFQv_-CDz74bTQYO36e_A9DZdUGAiHdJQ.jpg" width="400">
+    <div class="content-section-transparent">
+        <div class="container">
+             <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h2 class="text-uppercase small fw-semibold text-secondary">Біздің артықшылықтарымыз</h2>
+                    <h3 class="h2 fw-bold mt-2 text-dark">Басқа платформалардан ерекшеленеміз</h3>
+                    <p class="mt-4 text-secondary">Біз оқушыларға, ата-аналарға және мұғалімдерге мықты қолдау көрсетуді мақсат еткен платформа ретінде жұмысты жалғастырамыз.</p>
+                    <ul class="list-unstyled mt-4 text-secondary">
+                       <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Тиімді бақылау</li>
+                       <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Жоғары сапалы материалдар</li>
+                       <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Пайдаланушыға бағдарланған дизайн</li>
+                    </ul>
+                </div>
+                <div class="col-md-6 mt-4 mt-md-0 text-center">
+                    <img alt="A bookshelf filled with various books" class="img-fluid rounded shadow-lg" height="300" src="https://storage.googleapis.com/a1aa/image/wfAt8xCV7snFQv_-CDz74bTQYO36e_A9DZdUGAiHdJQ.jpg" width="400">
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Services Section -->
-     <div class="bg-white/90 backdrop-blur-sm py-10 content-section">
-        <div class="container mx-auto">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 px-5 md:px-0">
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <img alt="A student studying at a desk with a laptop and books" class="w-full h-48 object-cover rounded-lg mb-4" src="https://storage.googleapis.com/a1aa/image/v6sCrznNPiPPPw0WmRvQhjC9IQmaSQWrUH3_dcp_fTk.jpg">
-                    <h2 class="text-xl font-semibold mb-2">Оқушыларға:</h2>
-                    <ul class="list-disc list-inside text-gray-700">
-                        <li>Электронды күнделік және бағалар</li>
-                        <li>Сабақ кестесі және үй тапсырмалар</li>
-                        <li>Онлайн сабақтар мен тесттер</li>
-                        <li>БЖБ және ТЖБ тапсыру</li>
-                        <li>ҰБТ-ға дайындық</li>
-                        <li><span class="font-bold">Smart</span> білім беру курстары</li>
-                    </ul>
+     <div class="content-section-transparent">
+        <div class="container">
+            <div class="row g-4">
+                {# Карточка Оқушыларға #}
+                <div class="col-lg-4 col-md-6">
+                     <div class="card h-100 shadow-sm">
+                        <img alt="A student studying..." class="card-img-top service-card-img" src="https://storage.googleapis.com/a1aa/image/v6sCrznNPiPPPw0WmRvQhjC9IQmaSQWrUH3_dcp_fTk.jpg">
+                        <div class="card-body d-flex flex-column">
+                            <h4 class="card-title h5 fw-bold mb-3">Оқушыларға:</h4>
+                            <ul class="list-unstyled text-secondary mb-4">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Электронды күнделік және бағалар</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Сабақ кестесі және үй тапсырмалар</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Онлайн сабақтар мен тесттер</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>БЖБ және ТЖБ тапсыру</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ҰБТ-ға дайындық</li>
+                                <li class="mb-2"><i class="fas fa-star text-warning me-2"></i><span class="fw-bold">Smart</span> білім беру курстары</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <img alt="A family with parents and children smiling" class="w-full h-48 object-cover rounded-lg mb-4" src="https://storage.googleapis.com/a1aa/image/6x3ClnxbeBwM0RXlKeihXyhBxu_SX7rrmd4P6IVHpH4.jpg">
-                    <h2 class="text-xl font-semibold mb-2">Ата-аналарға:</h2>
-                    <ul class="list-disc list-inside text-gray-700">
-                        <li>Баланың күнделігі және бағалары</li>
-                        <li>Үй тапсырмасы мен сабақ кестесі</li>
-                        <li>Баланың үлгерімін бақылау</li>
-                        <li>Онлайн сабақтар мен тренажерлер</li>
-                        <li>ҰБТ-ға дайындық</li>
-                        <li>Баланың орналасқан жерін бақылау</li>
-                        <li><span class="font-bold">Smart</span> үлгерім мен бағалар аналитикасы</li>
-                    </ul>
+                 {# Карточка Ата-аналарға #}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 shadow-sm">
+                        <img alt="A family with parents..." class="card-img-top service-card-img" src="https://storage.googleapis.com/a1aa/image/6x3ClnxbeBwM0RXlKeihXyhBxu_SX7rrmd4P6IVHpH4.jpg">
+                        <div class="card-body d-flex flex-column">
+                            <h4 class="card-title h5 fw-bold mb-3">Ата-аналарға:</h4>
+                             <ul class="list-unstyled text-secondary mb-4">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Баланың күнделігі және бағалары</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Үй тапсырмасы мен сабақ кестесі</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Баланың үлгерімін бақылау</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Онлайн сабақтар мен тренажерлер</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ҰБТ-ға дайындық</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Баланың орналасқан жерін бақылау</li>
+                                <li class="mb-2"><i class="fas fa-star text-warning me-2"></i><span class="fw-bold">Smart</span> үлгерім мен бағалар аналитикасы</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <img alt="A teacher holding a book in a classroom" class="w-full h-48 object-cover rounded-lg mb-4" src="https://storage.googleapis.com/a1aa/image/rYJ0cHxDtG1x1sAkENWr9gOqiJUbbUZgNUvkRF5jwfY.jpg">
-                    <h2 class="text-xl font-semibold mb-2">Мұғалімдерге:</h2>
-                    <ul class="list-disc list-inside text-gray-700">
-                        <li>Электрондық журнал және бағалау жүйесі</li>
-                        <li>Сандық білім беру қызметтері</li>
-                        <li><span class="font-bold">Smart</span> дайын сабақтары мен тесттері</li>
-                        <li>Мұғалімдерге арналған курстар</li>
-                        <li>Білім сапасы және икемді есептер</li>
-                        <li>Қашықтықтан оқыту құралдары</li>
-                        <li>Цифрлық форматтағы мектеп оқулықтары</li>
-                        <li>ЭЦҚ арқылы құжаттарға қол қою</li>
-                        <li>БЖБ және ТЖБ құру</li>
-                    </ul>
+                 {# Карточка Мұғалімдерге #}
+                <div class="col-lg-4 col-md-6">
+                   <div class="card h-100 shadow-sm">
+                        <img alt="A teacher holding a book..." class="card-img-top service-card-img" src="https://storage.googleapis.com/a1aa/image/rYJ0cHxDtG1x1sAkENWr9gOqiJUbbUZgNUvkRF5jwfY.jpg">
+                        <div class="card-body d-flex flex-column">
+                            <h4 class="card-title h5 fw-bold mb-3">Мұғалімдерге:</h4>
+                             <ul class="list-unstyled text-secondary mb-4">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Электрондық журнал және бағалау жүйесі</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Сандық білім беру қызметтері</li>
+                                <li class="mb-2"><i class="fas fa-star text-warning me-2"></i><span class="fw-bold">Smart</span> дайын сабақтары мен тесттері</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Мұғалімдерге арналған курстар</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Білім сапасы және икемді есептер</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Қашықтықтан оқыту құралдары</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Цифрлық форматтағы мектеп оқулықтары</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ЭЦҚ арқылы құжаттарға қол қою</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>БЖБ және ТЖБ құру</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Call to Action Section -->
-    <div class="flex flex-col items-center justify-center bg-blue-900 text-white py-16 content-section">
-        <div class="text-center">
-            <h1 class="text-2xl font-bold mb-2">Біздің платформаны сынап көріңіз</h1>
-            <p class="text-lg mb-4"><span class="italic">SmartOqulyq</span>-қа қосылыңыз және оқу үрдісін жаңартыңыз!</p>
-            <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"><a href="{% url 'login' %}" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-300 inline-block">Бастау</a></button>
+    <div class="cta-section text-center">
+        <div class="container">
+            <h2 class="h1 fw-bold mb-3">Біздің платформаны сынап көріңіз</h2>
+            <p class="lead mb-4"><span class="fst-italic">SmartOqulyq</span>-қа қосылыңыз және оқу үрдісін жаңартыңыз!</p>
+            <a href="{% url 'register' %}" class="btn btn-light btn-lg fw-bold">Бастау</a>
         </div>
     </div>
 
     <!-- Footer -->
-    <footer class="bg-white text-center py-4 content-section">
-        <p class="text-gray-600 text-sm">Авторлық құқық © 2025 SmartOqulyq</p>
+    <footer class="bg-light text-center py-3">
+         <div class="container">
+            <p class="text-muted small mb-0">Авторлық құқық © {% now "Y" %} SmartOqulyq</p>
+        </div>
     </footer>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>

@@ -26,6 +26,7 @@ urlpatterns = [
     path('journal/', views.journal, name='journal'),
     path('teacher_schedule/', views.teacher_schedule, name='teacher_schedule'),
     path('about/', views.about, name='about_us'),
+    path('dashboard/schedule/', views.dashboard_schedule_view, name='dashboard_schedule'),
 
     path('recommendations/', views.recommendations, name='recommendations'),
     path('password_reset/', views.CustomPasswordResetView.as_view(), name='password_reset'), #Для сброса пароля

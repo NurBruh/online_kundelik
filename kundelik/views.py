@@ -1,10 +1,13 @@
 # kundelik/views.py
+from datetime import timedelta
 
 from django.contrib.auth import login, logout, authenticate
+from django.core.checks import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.urls import reverse_lazy
 from django import forms # Добавь импорт forms
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import Schedule, DailyGrade, ExamGrade, Class, Subject, User # Убедись, что User импортирован
@@ -498,6 +501,88 @@ class CustomPasswordResetView(PasswordResetView):
     # Можно добавить форму, если нужна кастомизация
     # form_class = CustomPasswordResetForm
 
+@login_required
+def dashboard_schedule_view(request):
+    """
+    Отображает страницу дашборда с расписанием/күнделік
+    для текущего пользователя, сгруппированным по датам (например, на текущую неделю).
+    """
+    user = request.user
+    schedules_queryset = Schedule.objects.none() # Начинаем с пустого QuerySet
+    schedules_by_date = defaultdict(list)
+
+    # Определяем диапазон дат для отображения (например, текущая неделя)
+    today = timezone.localdate()
+    start_of_week = today - timedelta(days=today.weekday()) # Понедельник
+    end_of_week = start_of_week + timedelta(days=6) # Воскресенье
+
+    # Получаем расписание в зависимости от роли пользователя (логика из вашего view 'journal')
+    try:
+        if user.role == 'student':
+            schedules_queryset = Schedule.objects.filter(
+                student=user,
+                date__range=[start_of_week, end_of_week] # Фильтр по дате
+            )
+        elif user.role == 'teacher':
+            # Убедимся, что у учителя есть связь с классом (напрямую или через школу)
+            # Предполагаем, что учитель видит расписание классов, которые он ведет
+            # (Нужна связь Teacher -> Class, в вашем коде Class -> Teacher)
+            classes_taught = Class.objects.filter(teacher=user) # Если есть поле teacher в Class
+            if classes_taught.exists():
+                schedules_queryset = Schedule.objects.filter(
+                    school_class__in=classes_taught,
+                    date__range=[start_of_week, end_of_week]
+                )
+            else:
+                 messages.warning(request, "Сіз ешқандай сыныпқа тағайындалмағансыз.")
+
+        elif user.role == 'parent':
+            # Используем поле parent_of из вашей модели User
+            if hasattr(user, 'parent_of') and user.parent_of:
+                 schedules_queryset = Schedule.objects.filter(
+                     student=user.parent_of,
+                     date__range=[start_of_week, end_of_week]
+                 )
+            else:
+                 messages.warning(request, "Профиліңізге оқушы тіркелмеген.")
+
+        elif user.role in ['admin', 'director']:
+            if user.school:
+                 schedules_queryset = Schedule.objects.filter(
+                     school_class__school=user.school, # Фильтруем по школе пользователя
+                     date__range=[start_of_week, end_of_week]
+                 )
+            else:
+                 # Администратор без школы может видеть все? Или ничего?
+                 # Пока оставим пустым, можно добавить логику для суперюзера
+                 messages.warning(request, "Сіздің мектебіңіз көрсетілмеген.")
+                 # if user.is_superuser:
+                 #     schedules_queryset = Schedule.objects.filter(date__range=[start_of_week, end_of_week])
+
+        # Оптимизация запроса и сортировка
+        schedules_queryset = schedules_queryset.select_related(
+            'subject', 'teacher', 'student', 'school_class'
+        ).order_by('date', 'time') # Сортируем по дате и времени
+
+        # Группировка по дате
+        for lesson in schedules_queryset:
+            schedules_by_date[lesson.date].append(lesson)
+
+    except AttributeError as e:
+        messages.error(request, f"Атрибут қатесі: {e}. Модель құрылымын тексеріңіз (мысалы, 'role', 'parent_of', 'school').")
+    except Exception as e:
+        messages.error(request, f"Кестені жүктеу кезінде күтпеген қате: {e}")
+
+
+    context = {
+        'schedules_by_date': dict(schedules_by_date), # Передаем сгруппированные данные
+        'view_date_start': start_of_week, # Даты для возможной навигации в шаблоне
+        'view_date_end': end_of_week,
+        # 'active_menu_item': 'dashboard_schedule' # Для выделения пункта меню в base
+    }
+
+    # Используем НОВЫЙ шаблон для дашборда расписания
+    return render(request, 'dashboard_schedule.html', context)
 # Представления для страниц после сброса пароля (используют стандартные шаблоны Django или твои)
 # Убедись, что эти шаблоны существуют в startup/templates/ или настрой пути:
 # password_reset_done.html
