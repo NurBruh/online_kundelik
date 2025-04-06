@@ -105,3 +105,20 @@ class ExamGrade(models.Model):
 
     def __str__(self):
         return f"{self.subject}: {self.grade}/{self.max_grade} для {self.student} от {self.teacher} ({self.date})"
+
+class UserProfile(models.Model):
+    # Связь с основной моделью пользователя
+    # related_name='userprofile' позволяет обращаться user.userprofile
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
+    # Ваши дополнительные поля
+    patronymic = models.CharField("Әкесінің аты", max_length=100, blank=True, null=True)
+    date_of_birth = models.DateField("Туған күні", blank=True, null=True)
+    # Пример поля с выбором
+    GENDER_CHOICES = [('M', 'Ер'), ('F', 'Әйел')]
+    gender = models.CharField("Жынысы", max_length=1, choices=GENDER_CHOICES, blank=True, null=True)
+    grade = models.CharField("Сыныбы", max_length=10, blank=True, null=True) # Или ForeignKey на Class
+    avatar = models.ImageField("Аватар", upload_to='avatars/', default='avatars/default.png', blank=True, null=True)
+    # ... другие поля ...
+
+    def __str__(self):
+        return f"Профиль: {self.user.username}"

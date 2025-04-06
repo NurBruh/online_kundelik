@@ -1,255 +1,498 @@
-{% load static %}
+{% load static i18n %}
 <!DOCTYPE html>
 <html lang="kk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block dashboard_title %}SmartOqulyq Дашборд{% endblock %}</title>
-
+    <title>{% block dashboard_title %}{% trans "SmartOqulyq Дашборд - Кесте" %}{% endblock %}</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-
     <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
-
-    <!-- Google Font Roboto -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"> <!-- Updated Font Awesome version -->
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"> <!-- Changed font to Inter for a modern look -->
+    <!-- Custom Styles -->
     <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f8f9fa; /* Светло-серый фон */
+        :root {
+            --bs-primary-rgb: 13, 110, 253; /* Standard Bootstrap Blue for consistency */
+            --sidebar-width: 250px;
+            --topbar-height: 60px;
         }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fc; /* Slightly different gray */
+            font-size: 0.9rem; /* Slightly smaller base font size */
+        }
+
+        .navbar {
+            height: var(--topbar-height);
+            background-color: #ffffff !important; /* White navbar */
+            border-bottom: 1px solid #e3e6f0; /* Subtle border */
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important; /* Softer shadow */
+        }
+
+        .navbar-brand {
+            color: #4e73df !important; /* Primary color for brand */
+            font-weight: 700;
+            font-size: 1.2rem; /* Adjust size */
+        }
+        .navbar-brand img {
+           max-height: 35px; /* Adjust logo height */
+        }
+
+        .navbar .nav-link {
+            color: #858796; /* Gray for navbar links */
+        }
+        .navbar .nav-link:hover {
+            color: #4e73df;
+        }
+        .navbar .dropdown-menu {
+            border: 1px solid #e3e6f0;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .navbar .dropdown-item {
+             font-size: 0.85rem;
+             color: #3a3b45;
+        }
+        .navbar .dropdown-item:hover, .navbar .dropdown-item:focus {
+             background-color: #f8f9fc;
+             color: #4e73df;
+        }
+        .navbar .dropdown-item i {
+            margin-right: 0.5rem;
+            color: #b7b9cc; /* Lighter icon color */
+        }
+
         .sidebar {
             position: fixed;
             top: 0;
             bottom: 0;
             left: 0;
-            z-index: 100; /* Behind the navbar */
-            padding: 48px 0 0; /* Padding for top nav */
-            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
-            background-color: #fff; /* Белый фон для сайдбара */
-            width: 240px; /* Фиксированная ширина сайдбара */
-            transition: transform 0.3s ease-in-out; /* Плавное скрытие/показ */
+            z-index: 100;
+            padding: var(--topbar-height) 0 0; /* Padding for navbar */
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+            background-color: #4e73df; /* Primary color sidebar */
+            width: var(--sidebar-width);
+            transition: transform 0.3s ease-in-out;
         }
-        /* Стиль для скрытия сайдбара на мобильных */
+
         @media (max-width: 767.98px) {
-          .sidebar {
-            transform: translateX(-100%); /* Скрыть за левым краем */
-          }
-          .sidebar.show {
-            transform: translateX(0); /* Показать при классе show */
-          }
-          main {
-            margin-left: 0 !important; /* Убрать отступ контента на мобильных */
-          }
+            .sidebar {
+                transform: translateX(calc(-1 * var(--sidebar-width)));
+                padding-top: var(--topbar-height);
+                z-index: 1040; /* Ensure sidebar is above backdrop */
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            main {
+                margin-left: 0 !important; /* No margin when sidebar is hidden on mobile */
+            }
+            .sidebar-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 1030; /* Below sidebar, above content */
+                display: none;
+            }
+            .sidebar.show ~ .sidebar-backdrop {
+                display: block;
+            }
         }
 
         .sidebar-sticky {
-            position: relative;
-            top: 0;
-            height: calc(100vh - 48px);
-            padding-top: .5rem;
-            overflow-x: hidden;
-            overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
+            height: calc(100vh - var(--topbar-height));
+            overflow-y: auto;
+            padding-top: 1rem;
         }
 
-        .nav-link {
+        .sidebar .nav-link {
             font-weight: 500;
-            color: #333;
-            padding: 0.75rem 1.25rem; /* Увеличим паддинги */
+            color: rgba(255, 255, 255, 0.8); /* Lighter text on dark sidebar */
+            padding: 0.8rem 1.5rem; /* Adjust padding */
+            font-size: 0.9rem;
+            transition: all 0.2s ease; /* Smooth transition */
         }
-        .nav-link .fa-fw { /* Иконки Font Awesome */
+        .sidebar .nav-link .fa-fw {
             width: 1.25em;
-            margin-right: 0.5rem; /* Отступ иконки */
+            margin-right: 0.75rem; /* More space for icon */
+            font-size: 1rem; /* Slightly larger icons */
         }
-        .nav-link:hover {
-            color: #007bff;
-            background-color: #e9ecef; /* Фон при наведении */
+        .sidebar .nav-link:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.1);
         }
-        .nav-link.active {
-            color: #0d6efd; /* Основной синий */
-            background-color: #cfe2ff; /* Светло-синий фон */
+        .sidebar .nav-link.active {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.2); /* Subtle active background */
+            font-weight: 600; /* Bold active link */
         }
-        /* Основной контент с отступом под сайдбар */
+        /* Sidebar profile/logout section on mobile */
+        .sidebar .nav-item.mt-auto {
+            padding-bottom: 1rem;
+        }
+        .sidebar .nav-item.mt-auto .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .sidebar .nav-item.mt-auto button {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .sidebar .nav-item.mt-auto button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+
+        /* Mobile toggler button */
+        .navbar-toggler {
+             border: none;
+        }
+        .navbar-toggler:focus {
+             box-shadow: none;
+        }
+        .navbar-toggler-icon {
+             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(78, 115, 223, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+
         main {
-             margin-left: 240px; /* Отступ равен ширине сайдбара */
-             padding: 1.5rem; /* Отступы внутри контента */
-             padding-top: calc(56px + 1.5rem); /* Отступ под верхний навбар + свой паддинг */
+            margin-left: var(--sidebar-width);
+            padding: 2rem; /* More padding around content */
+            padding-top: calc(var(--topbar-height) + 2rem);
+            transition: margin-left 0.3s ease-in-out;
         }
 
-        .navbar-brand {
-            padding-top: .75rem;
-            padding-bottom: .75rem;
-            font-size: 1.25rem;
-            background-color: rgba(0, 0, 0, .25);
-            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .25);
+        /* Card styling for content */
+        .card {
+            border: none; /* Remove default card border */
+            border-radius: 0.5rem; /* Rounded corners */
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); /* Consistent shadow */
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            color: #4e73df; /* Primary color for header text */
+        }
+        .card-body {
+            padding: 1.5rem;
         }
 
-        .navbar .form-control {
-            padding: .75rem 1rem;
-            border-width: 0;
-            border-radius: 0;
+        .table {
+            margin-bottom: 0; /* Remove default bottom margin when inside card */
+            border-color: #e3e6f0; /* Lighter border color */
+        }
+        .table th {
+            font-weight: 600; /* Bolder table headers */
+            background-color: #f8f9fc; /* Light background for headers */
+            color: #5a5c69; /* Darker gray for header text */
+            border-bottom-width: 2px; /* Slightly thicker bottom border */
+            font-size: 0.85rem;
+            padding: 0.9rem 1rem;
+        }
+        .table td {
+            vertical-align: middle;
+            color: #5a5c69; /* Standard text color */
+            padding: 0.9rem 1rem;
+             font-size: 0.85rem;
+        }
+        .table-hover > tbody > tr:hover {
+            background-color: #f8f9fc; /* Subtle hover effect */
+            color: #2e2f37; /* Slightly darken text on hover */
         }
 
-        .form-control-dark {
-            color: #fff;
-            background-color: rgba(255, 255, 255, .1);
-            border-color: rgba(255, 255, 255, .1);
+        .status-completed {
+            color: #1cc88a; /* Bootstrap success color */
+            font-weight: 600;
         }
-        .form-control-dark:focus {
-            border-color: transparent;
-            box-shadow: 0 0 0 3px rgba(255, 255, 255, .25);
+        .status-pending {
+            color: #e74a3b; /* Bootstrap danger color */
+            font-weight: 600;
         }
-         /* Стилизация шапки таблицы (из прошлого примера) */
-        .table thead {
-            background-color: #e9ecef;
+        .status-icon {
+            font-size: 1.1rem;
         }
-        .date-header {
-            border-radius: 0.375rem;
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 400;
+            color: #5a5c69;
+            margin-bottom: 1.5rem;
         }
+
+        .student-name {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #5a5c69;
+        }
+
+        .date-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .date-navigation .current-date {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #4e73df;
+        }
+        .date-navigation .btn {
+            color: #858796;
+        }
+        .date-navigation .btn:hover {
+            color: #4e73df;
+            background-color: #f8f9fc;
+        }
+
+        .footer {
+            padding-top: 2rem;
+            margin-top: 2rem;
+            border-top: 1px solid #e3e6f0;
+            color: #858796; /* Muted color for footer text */
+        }
+        .footer h5 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #5a5c69; /* Slightly darker heading for footer */
+            margin-bottom: 1rem;
+        }
+        .footer .list-unstyled a {
+            color: #858796;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s ease;
+        }
+        .footer .list-unstyled a:hover {
+            color: #4e73df;
+        }
+        .footer small {
+             font-size: 0.8rem;
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            .navbar .navbar-nav.ms-auto {
+                margin-right: 1rem; /* Add some space on desktop */
+            }
+        }
+
     </style>
 </head>
 <body>
-
-    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-         <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
-                {# --- ИЗМЕНЕНО: Укажите правильный путь к логотипу --- #}
-                <img src="{% static 'image/image.png' %}" alt="SmartOqulyq logo" height="40" class="d-inline-block align-text-top me-2">
+    <header class="navbar sticky-top flex-md-nowrap p-0">
+        <div class="container-fluid">
+            <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="{% url 'home' %}">
+                <img src="{% static 'image/image.png' %}" alt="{% trans 'SmartOqulyq логотипі' %}" class="d-inline-block align-text-top me-2">
             </a>
 
-         {# Кнопка для показа/скрытия сайдбара на мобильных #}
-         <button class="navbar-toggler d-md-none collapsed me-3" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
-             <span class="navbar-toggler-icon"></span>
-         </button>
- {# --- НАЧАЛО ИЗМЕНЕНИЙ --- #}
-                    {% if user.is_authenticated %}
-                        {# --- Показываем ЭТО, если пользователь ВОШЕЛ --- #}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-user me-1"></i>
-                                {{ user.first_name|default:user.username }} {# Показываем имя или username #}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
-                                {# Ссылка на Дашборд (пример) #}
-                                <li><a class="dropdown-item" href="{% url 'dashboard_schedule' %}">Дашборд</a></li>
-                                <li><a class="dropdown-item" href="#">Профиль</a></li> {# Замените # на URL профиля #}
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    {# Форма для выхода #}
-                                    <form action="{% url 'logout' %}" method="post" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="dropdown-item">Шығу</button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        {# --- Показываем ЭТО, если пользователь НЕ ВОШЕЛ --- #}
-                        <li class="nav-item">
-                            {# Кнопка входа #}
-                            <a href="{% url 'login' %}" class="btn btn-primary ms-lg-2 mt-2 mt-lg-0">Кіру</a>
-                        </li>
-                         <li class="nav-item">
-                            {# Кнопка регистрации (добавлено) #}
-                            <a href="{% url 'register' %}" class="btn btn-outline-primary ms-lg-2 mt-2 mt-lg-0">Тіркелу</a>
-                        </li>
-                    {% endif %}
-                    {# --- КОНЕЦ ИЗМЕНЕНИЙ --- #}
+            <!-- Mobile Sidebar Toggle -->
+            <button class="navbar-toggler d-md-none collapsed border-0" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="{% trans 'Навигацияны ауыстыру' %}">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Topbar Navbar -->
+            <ul class="navbar-nav ms-auto flex-row d-none d-md-flex align-items-center">
+                {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle px-3" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="me-2 d-none d-lg-inline text-gray-600 small">{{ user.first_name|default:user.username }}</span>
+                            <i class="fas fa-user-circle fa-lg"></i> <!-- Larger user icon -->
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
+                            <li><a class="dropdown-item" href="{% url 'dashboard_schedule' %}"><i class="fas fa-tachometer-alt fa-fw"></i> {% trans "Дашборд" %}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'profile_page' %}"><i class="fas fa-user fa-fw"></i> {% trans "Профиль" %}</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form action="{% url 'logout' %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt fa-fw"></i> {% trans "Шығу" %}</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a href="{% url 'login' %}" class="nav-link px-3">{% trans "Кіру" %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'register' %}" class="btn btn-primary btn-sm me-3">{% trans "Тіркелу" %}</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
     </header>
 
     <div class="container-fluid">
         <div class="row">
-            {# Сайдбар #}
+            <!-- Sidebar -->
             <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
-                <div class="position-sticky pt-3 sidebar-sticky">
-                    {# Используем nav-pills для вертикального меню #}
-                    <ul class="nav nav-pills flex-column">
+                <div class="sidebar-sticky">
+                    <ul class="nav nav-pills flex-column mb-auto">
                         <li class="nav-item">
-                             {# Пример активной ссылки #}
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_schedule' %}active{% endif %}" aria-current="page" href="#"> {# Замените # на реальный URL #}
+                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_schedule' or request.resolver_match.url_name == 'daily_grades' %}active{% endif %}" href="{% url 'dashboard_schedule' %}">
                                 <i class="fas fa-calendar-alt fa-fw"></i>
-                                Менің кестем
+                                {% trans "Менің кестем" %}
                             </a>
                         </li>
                         <li class="nav-item">
-                             {# Ссылка на Күнделік (возможно, та же страница) #}
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_journal' or request.resolver_match.url_name == 'dashboard_schedule' %}active{% endif %}" href="#"> {# Замените # на реальный URL #}
-                                <i class="fas fa-book fa-fw"></i>
-                                Күнделік
+                            <a class="nav-link {% comment %}{% if request.resolver_match.url_name == 'some_other_view' %}active{% endif %}{% endcomment %}" href="{% url 'daily_grades' %}"> <!-- Changed URL to daily_grades based on footer -->
+                                <i class="fas fa-book-open fa-fw"></i> <!-- Changed icon -->
+                                {% trans "Күнделік / Бағалар" %}
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_contact_teacher' %}active{% endif %}" href="#"> {# Замените # на реальный URL #}
-                                <i class="fas fa-chalkboard-teacher fa-fw"></i>
-                                Мұғаліммен байланыс
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_grades' %}active{% endif %}" href="#"> {# Замените # на реальный URL #}
-                                <i class="fas fa-star fa-fw"></i>
-                                Бағалар
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_exams' %}active{% endif %}" href="#"> {# Замените # на реальный URL #}
-                                <i class="fas fa-file-alt fa-fw"></i>
-                                БЖБ/ТЖБ
-                            </a>
-                        </li>
-                         {# Дополнительные пункты меню дашборда #}
-                         <li class="nav-item mt-3 border-top pt-3">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_profile' %}active{% endif %}" href="#"> {# Замените # на реальный URL #}
+                        <li class="nav-item mt-3 border-top my-3 pt-3"> <!-- Added margin top/bottom -->
+                            <a class="nav-link {% if request.resolver_match.url_name == 'profile_page' %}active{% endif %}" href="{% url 'profile_page' %}">
                                 <i class="fas fa-user-cog fa-fw"></i>
-                                Профиль
+                                {% trans "Профиль" %}
                             </a>
                         </li>
-                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_settings' %}active{% endif %}" href="#"> {# Замените # на реальный URL #}
-                                <i class="fas fa-cogs fa-fw"></i>
-                                Баптаулар
-                            </a>
+                        <!-- Mobile only section -->
+                        <li class="nav-item mt-auto d-md-none pt-3 border-top">
+                            {% if user.is_authenticated %}
+                                <div class="px-3 pb-2">
+                                    <span class="nav-link disabled text-white-50"><i class="fas fa-user fa-fw"></i> {{ user.first_name|default:user.username }}</span>
+                                </div>
+                                <form action="{% url 'logout' %}" method="post" class="px-3">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm w-100 mb-2">{% trans "Шығу" %}</button>
+                                </form>
+                            {% else %}
+                                <a class="nav-link" href="{% url 'login' %}">
+                                    <i class="fas fa-sign-in-alt fa-fw"></i>
+                                    {% trans "Кіру" %}
+                                </a>
+                                <a class="nav-link" href="{% url 'register' %}">
+                                    <i class="fas fa-user-plus fa-fw"></i>
+                                    {% trans "Тіркелу" %}
+                                </a>
+                            {% endif %}
                         </li>
                     </ul>
                 </div>
             </nav>
 
-            {# Основной контент страницы #}
-            <main class="col-md-9 ms-md-auto col-lg-10"> {# Отступ слева равен ширине сайдбара #}
+            <!-- Sidebar Backdrop for Mobile -->
+            <div class="sidebar-backdrop d-md-none" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"></div>
 
-                {# Сюда будет вставляться контент дочерних шаблонов #}
+            <!-- Main Content -->
+            <main class="col-md-9 ms-md-auto col-lg-10 px-md-4">
                 {% block dashboard_content %}
-                    {# Заглушка, если контент не определен #}
-                    <div class="alert alert-info">
-                        Бұл дашбордтың негізгі беті. Навигацияны пайдаланып бөлімді таңдаңыз.
-                    </div>
-                {% endblock %}
+                <h1 class="page-title">{% trans "Сабақ кестесі" %}</h1>
 
-                {# Футер можно разместить здесь или вынести за пределы main #}
-                <footer class="pt-4 my-md-5 pt-md-5 border-top">
-                    <div class="row">
-                        <div class="col-12 col-md text-center text-md-start">
-                            <img class="mb-2" src="{% static 'image/image.png' %}" alt="" width="24" height="19">
-                            <small class="d-block mb-3 text-muted">© {% now "Y" %} SmartOqulyq</small>
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <div class="student-name">Сарсенбек Ерхан Ерболулы</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="date-navigation">
+                             <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i> {% trans "Артқа" %}</button>
+                             <div class="current-date">25 Ақпан 2025</div>
+                             <button class="btn btn-outline-secondary btn-sm">{% trans "Келесі" %} <i class="fas fa-arrow-right ms-1"></i></button>
                         </div>
-                        <div class="col-6 col-md">
-                            <h5>Мүмкіндіктер</h5>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead >
+                                    <tr>
+                                        <th>№</th>
+                                        <th>{% trans "Пән" %}</th>
+                                        <th>{% trans "Уақыт" %}</th>
+                                        <th>{% trans "Тақырып" %}</th>
+                                        <th>{% trans "Статус" %}</th>
+                                        <th>{% trans "Үй тапсырма" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Математика <br><small class="text-muted">Қаз Бәуыржан Бисанов</small></td>
+                                        <td>8:00 - 8:40</td>
+                                        <td>Жай бөлшектер</td>
+                                        <td class="status-completed"><i class="fas fa-check-circle status-icon"></i></td>
+                                        <td>№6, 7 тапсырма 79 бет</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Қазақ тілі <br><small class="text-muted">Қаз Жазира Бакой</small></td>
+                                        <td>8:50 - 9:45</td>
+                                        <td>Жалтаулар</td>
+                                        <td class="status-completed"><i class="fas fa-check-circle status-icon"></i></td>
+                                        <td>№7 тапсырма 92 бет</td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Жаратылыстану <br><small class="text-muted">Қаз Айсын Еронгалиев</small></td>
+                                        <td>9:50 - 10:35</td>
+                                        <td>Биосфера</td>
+                                        <td class="status-pending"><i class="fas fa-times-circle status-icon"></i></td>
+                                        <td>§12 оқу және мазмұндау</td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td>Музыка <br><small class="text-muted">Қаз Жимерке Егізбай</small></td>
+                                        <td>10:40 - 11:25</td>
+                                        <td>Құрманғазы</td>
+                                         <td class="status-pending"><i class="fas fa-times-circle status-icon"></i></td>
+                                        <td>жаттау</td>
+                                    </tr>
+                                    <tr>
+                                        <td>5</td>
+                                        <td>Орыс тілі <br><small class="text-muted">Рус Бөлшерісінді</small></td>
+                                        <td>11:40 - 12:25</td>
+                                        <td>Культура питания</td>
+                                        <td class="status-completed"><i class="fas fa-check-circle status-icon"></i></td>
+                                        <td>управление 4 стр 102</td>
+                                    </tr>
+                                    <tr>
+                                        <td>6</td>
+                                        <td>Дене шынықтыру <br><small class="text-muted">Қаз Конесары Байгала</small></td>
+                                        <td>12:30 - 13:15</td>
+                                        <td>Футбол ережелері</td>
+                                         <td class="status-completed"><i class="fas fa-check-circle status-icon"></i></td>
+                                        <td>Кашықтыққа жүгіру</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Removed the placeholder "Біз туралы" / "Кемшестер" section -->
+
+                <footer class="footer">
+                    <div class="row">
+                         <div class="col-12 col-md-3 mb-3 text-center text-md-start">
+                            <img class="mb-2" src="{% static 'image/image.png' %}" alt="{% trans 'SmartOqulyq логотипі' %}" height="24">
+                            <small class="d-block mb-3 text-muted">© {% now "Y" %} SmartOqulyq</small>
+                         </div>
+                        <div class="col-6 col-md-3 offset-md-3">
+                             <h5>{% trans "Навигация" %}</h5>
                             <ul class="list-unstyled text-small">
-                                <li class="mb-1"><a class="link-secondary text-decoration-none" href="#">Кесте</a></li>
-                                <li class="mb-1"><a class="link-secondary text-decoration-none" href="#">Бағалар</a></li>
-                                <li class="mb-1"><a class="link-secondary text-decoration-none" href="#">Байланыс</a></li>
+                                <li class="mb-1"><a href="{% url 'dashboard_schedule' %}">{% trans "Кесте" %}</a></li>
+                                <li class="mb-1"><a href="{% url 'daily_grades' %}">{% trans "Бағалар" %}</a></li>
+                                <li class="mb-1"><a href="{% url 'profile_page' %}">{% trans "Профиль" %}</a></li>
                             </ul>
                         </div>
-                        <div class="col-6 col-md">
-                            <h5>Біз туралы</h5>
+                        <div class="col-6 col-md-3">
+                            <h5>{% trans "Ресурстар" %}</h5>
                             <ul class="list-unstyled text-small">
-                                <li class="mb-1"><a class="link-secondary text-decoration-none" href="{% url 'about_us' %}">Быз туралы</a></li>
-                                <li class="mb-1"><a class="link-secondary text-decoration-none" href="#">Байланыс</a></li>
+                                <li class="mb-1"><a href="#">{% trans "Қолдау" %}</a></li>
+                                <li class="mb-1"><a href="{% url 'about_us' %}">{% trans "Біз туралы" %}</a></li>
+                                <li class="mb-1"><a href="#">{% trans "Құпиялылық" %}</a></li>
                             </ul>
                         </div>
                     </div>
                 </footer>
-
+                {% endblock %}
             </main>
         </div>
     </div>
@@ -257,6 +500,23 @@
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-    {% block extra_js %}{% endblock %} {# Место для дополнительных скриптов #}
+    {% block extra_js %}
+    {% comment %} Add page specific javascript here {% endcomment %}
+    <script>
+        // Optional: Add event listener to close sidebar when backdrop is clicked
+        const sidebarBackdrop = document.querySelector('.sidebar-backdrop');
+        const sidebarMenu = document.getElementById('sidebarMenu');
+        if (sidebarBackdrop && sidebarMenu) {
+            sidebarBackdrop.addEventListener('click', () => {
+                const bsCollapse = new bootstrap.Collapse(sidebarMenu, {
+                    toggle: false // Prevent toggling again if already closing
+                });
+                if (sidebarMenu.classList.contains('show')) {
+                     bsCollapse.hide();
+                }
+            });
+        }
+    </script>
+    {% endblock %}
 </body>
 </html>

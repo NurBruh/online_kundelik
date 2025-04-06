@@ -1,0 +1,83 @@
+{% extends 'dashboard_base.html' %}
+{% load static i18n %}
+
+{% block dashboard_title %}{% trans "Жаңа пән қосу" %}{% endblock %}
+
+{% block dashboard_content %}
+
+    {# Заголовок страницы #}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">{% trans "Жаңа пән қосу" %}</h1>
+    </div>
+
+    {# Отображаем форму, если она передана #}
+    {% if form %}
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post" action="">
+                    {% csrf_token %}
+
+                    {# Отображение общих ошибок формы #}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {# Итерация по полям формы #}
+                    {% for field in form %}
+                        {# Скрытые поля отображаем напрямую #}
+                        {% if field.is_hidden %}
+                            {{ field }}
+                        {% else %}
+                            <div class="mb-3">
+                                {# Метка поля #}
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}{% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+
+                                {# Поле ввода #}
+                                {{ field.as_widget.attrs.class }} {% if field.errors %}is-invalid{% endif %}
+                                {{ field }}
+
+                                {# Ошибки поля #}
+                                {% if field.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in field.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                {# Текст помощи #}
+                                {% if field.help_text %}
+                                    <div class="form-text">{{ field.help_text|safe }}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    <hr> {# Разделитель #}
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-book me-1"></i> {% trans "Пәнді қосу" %}
+                        </button>
+                         {# Кнопка отмены, возможно, ведущая на главную дашборда или список предметов #}
+                         <a href="{% url 'dashboard_schedule' %}" class="btn btn-secondary">{% trans "Бас тарту" %}</a>
+                    </div>
+
+                </form>
+            </div> {# end card-body #}
+        </div> {# end card #}
+
+    {% else %}
+        {# Сообщение, если форма не доступна (например, нет прав) #}
+        <div class="alert alert-warning" role="alert">
+            {% trans "Форманы көрсету мүмкін емес. Рұқсаттарыңызды тексеріңіз." %}
+        </div>
+    {% endif %}
+
+{% endblock %}
