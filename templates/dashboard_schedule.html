@@ -10,84 +10,131 @@
     {# Заголовок внутри основной области #}
     <h1 class="page-title">{% trans "Сабақ кестесі" %}</h1>
 
-    {# Отображение имени ученика/пользователя (карточка вынесена для группировки) #}
+    {# Отображение имени пользователя/класса (карточка вынесена для группировки) #}
     <div class="card shadow mb-4">
-        {# Показываем имя, если это расписание конкретного пользователя #}
-        {% if target_user %}
-        <div class="card-header py-3">
-             {# Используем target_user, который передан из view #}
-             {# Отображаем роль, если передана #}
-            <div class="student-name">
-                {{ target_user.get_full_name|default:target_user.username }}
-                {% if display_role %}<span class="badge bg-secondary ms-2">{{ display_role }}</span>{% endif %}
+        <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap">
+            {# Показываем имя пользователя или название класса #}
+            <h6 class="m-0 font-weight-bold text-primary">
+                {% if display_role == 'student' and viewing_student %}
+                     {{ viewing_student.get_full_name|default:viewing_student.username }}
+                     {% if target_class %}({{ target_class.name }}){% endif %}
+                     <span class="badge bg-secondary ms-2">{% trans "Оқушы" %}</span>
+                {% elif display_role == 'teacher' and target_user %}
+                     {{ target_user.get_full_name|default:target_user.username }}
+                     <span class="badge bg-secondary ms-2">{% trans "Мұғалім" %}</span>
+                 {% elif display_role == 'parent' and viewing_student %}
+                      {% trans "Оқушы:" %} {{ viewing_student.get_full_name|default:viewing_student.username }}
+                      {% if target_class %}({{ target_class.name }}){% endif %}
+                 {% elif display_role == 'admin' or display_role == 'director' %}
+                     {% if target_user.school %}
+                         {{ target_user.school.name }} - {% trans "Жалпы кесте" %}
+                     {% else %}
+                         {% trans "Жалпы кесте" %}
+                     {% endif %}
+                     <span class="badge bg-secondary ms-2">{{ target_user.get_role_display|default:display_role }}</span>
+                {% else %}
+                     {% trans "Менің кестем" %}
+                {% endif %}
+            </h6>
+            {# --- Навигация по датам --- #}
+            <div class="date-navigation d-flex align-items-center">
+                 <a href="?date={{ prev_week_date_str }}" class="btn btn-outline-secondary btn-sm me-2" title="{% trans 'Алдыңғы апта' %}"><i class="fas fa-arrow-left"></i></a>
+                 <div class="current-date fw-bold mx-2">{{ view_date_start|date:"d M" }} - {{ view_date_end|date:"d M Y" }}</div>
+                 <a href="?date={{ next_week_date_str }}" class="btn btn-outline-secondary btn-sm ms-2" title="{% trans 'Келесі апта' %}"><i class="fas fa-arrow-right"></i></a>
             </div>
         </div>
-        {% endif %}
 
-        <div class="card-body"> {# Оборачиваем навигацию и таблицу в card-body #}
-            {# --- Навигация по датам --- #}
-            <div class="date-navigation mb-4">
-                 {# ВАЖНО: Замените '#' на реальные URL для навигации по датам #}
-                 {# Например: href="?date={{ previous_week_date|date:'Y-m-d' }}" #}
-                 <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i> {% trans "Алдыңғы апта" %}</a>
-                 {# Отображаем диапазон дат из контекста #}
-                 <div class="current-date">{{ view_date_start|date:"d M" }} - {{ view_date_end|date:"d M Y" }}</div>
-                 {# Например: href="?date={{ next_week_date|date:'Y-m-d' }}" #}
-                 <a href="#" class="btn btn-outline-secondary btn-sm">{% trans "Келесі апта" %} <i class="fas fa-arrow-right ms-1"></i></a>
-            </div>
-
+        <div class="card-body pt-2"> {# Уменьшил верхний паддинг #}
             {# --- Отображение расписания по дням --- #}
             {% if schedules_by_date %}
                 {% for date, daily_schedules in schedules_by_date.items %}
                     {# Заголовок дня недели #}
                      <h3 class="h5 fw-bold mt-4 mb-3 border-bottom pb-2">
-                        {{ date|date:"l, d F Y" }} {# Полный формат даты и дня недели #}
+                        {{ date|date:"l, d F Y" }}
                     </h3>
                     <div class="table-responsive">
-                        <table class="table table-hover table-sm">
+                        <table class="table table-hover table-sm schedule-table"> {# Добавил класс для возможной доп. стилизации #}
                             <thead>
                                 <tr>
                                     <th scope="col" class="text-center" style="width: 5%;">№</th>
-                                    <th scope="col" style="width: 15%;">{% trans "Уақыт" %}</th> {# Уменьшил ширину #}
-                                    <th scope="col" style="width: 25%;">{% trans "Пән" %} / {% trans "Тақырып" %}</th> {# Объединил #}
-                                    <th scope="col" style="width: 35%;">{% trans "Үй тапсырма" %}</th> {# Увеличил ширину #}
+                                    <th scope="col" class="text-center" style="width: 10%;">{% trans "Уақыт" %}</th>
+                                    <th scope="col" style="width: 25%;">{% trans "Пән" %} / {% trans "Тақырып" %}</th>
+                                    <th scope="col" style="width: 25%;">{% trans "Үй тапсырмасы" %}</th>
+                                    {# Отображаем учителя только если это не расписание учителя #}
+                                    {% if display_role != 'teacher' %}
+                                    <th scope="col" style="width: 15%;">{% trans "Мұғалім" %}</th>
+                                    {% endif %}
                                     <th scope="col" class="text-center" style="width: 10%;">{% trans "Статус" %}</th>
-                                    <th scope="col" style="width: 10%;">{% trans "Мұғалім" %}</th>
+                                    {# Колонка действий только для учителей #}
+                                    {% if request.user.role == 'teacher' %}
+                                    <th scope="col" class="text-center" style="width: 10%;">{% trans "Әрекеттер" %}</th>
+                                    {% endif %}
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for lesson in daily_schedules %}
                                 <tr>
                                     <td class="text-center align-middle">{{ lesson.lesson_number|default:forloop.counter }}</td>
-                                    <td class="text-center align-middle">{{ lesson.time_start|time:"H:i"|default:"-" }} - {{ lesson.time_end|time:"H:i"|default:"" }}</td> {# Пример с start/end time #}
-                                    <td class="align-middle fw-medium">
-                                        {{ lesson.subject.name|default:"-" }}
-                                        {# ПРОВЕРЬТЕ: Если у урока есть отдельное поле 'topic', используйте его #}
+                                    <td class="text-center align-middle">{{ lesson.time_start|time:"H:i"|default:"-" }}<br>{{ lesson.time_end|time:"H:i"|default:"" }}</td>
+                                    <td class="align-middle">
+                                        <span class="fw-medium">{{ lesson.subject.name|default:"-" }}</span>
                                         {% if lesson.topic %}
-                                           <br><small class="text-muted">{{ lesson.topic }}</small>
+                                           <br><small class="text-muted fst-italic">{{ lesson.topic }}</small> {# Тема курсивом #}
                                         {% endif %}
                                     </td>
-                                    {# ПРОВЕРЬТЕ: Убедитесь, что 'lesson.task' содержит именно домашнее задание #}
-                                    <td class="align-middle small">{{ lesson.task|default:"-" }}</td> {# Домашнее задание #}
+                                    <td class="align-middle small">{{ lesson.task|default:"-"|linebreaksbr }}</td> {# Добавил linebreaksbr для переносов #}
+                                    {# Отображаем учителя только если это не расписание учителя #}
+                                    {% if display_role != 'teacher' %}
+                                        <td class="small text-muted align-middle">{{ lesson.teacher.get_full_name|default:lesson.teacher.username|default:"-" }}</td>
+                                    {% endif %}
                                     <td class="text-center align-middle">
-                                        {# Статус урока с иконками (логика статусов может отличаться) #}
-                                        {% with status_display=lesson.get_status_display|default:lesson.status %}
+                                        {# Статус урока с иконками #}
+                                        {% with status_display=lesson.get_status_display|default:lesson.status|default:"-" %}
                                             {% if lesson.status == 'completed' or lesson.status == 'checked' %}
                                                 <span class="text-success" title="{{ status_display }}"><i class="fas fa-check-circle"></i></span>
                                             {% elif lesson.status == 'not_completed' or lesson.status == 'missed' %}
                                                 <span class="text-danger" title="{{ status_display }}"><i class="fas fa-times-circle"></i></span>
                                             {% elif lesson.status == 'assigned' or lesson.status == 'pending' %}
-                                                 <span class="text-warning" title="{{ status_display }}"><i class="far fa-clock"></i></span> {# Пример для 'в процессе' #}
+                                                 <span class="text-warning" title="{{ status_display }}"><i class="far fa-clock"></i></span>
                                             {% else %}
-                                                <span class="text-secondary" title="{{ status_display }}"><i class="far fa-circle"></i></span> {# Неизвестный или 'назначен' #}
+                                                <span class="text-secondary" title="{{ status_display }}"><i class="far fa-circle"></i></span>
                                             {% endif %}
                                         {% endwith %}
                                     </td>
-                                     <td class="small text-muted align-middle">{{ lesson.teacher.get_full_name|default:"-" }}</td>
+                                    {# --- Блок действий для учителя --- #}
+                                    {% if request.user.role == 'teacher' %}
+                                    <td class="text-center align-middle">
+                                        {# Показываем кнопки только если текущий юзер - учитель этого урока #}
+                                        {% if request.user == lesson.teacher %}
+                                            {# Ссылка на добавление текущей оценки #}
+                                            <a href="{% url 'add_daily_grade' %}?subject={{ lesson.subject.id }}&class={{ lesson.school_class.id }}&date={{ lesson.date|date:'Y-m-d' }}"
+                                               class="action-icon text-primary" title='{% trans "Күнделікті баға қосу" %}'>
+                                                <i class="fas fa-star"></i>
+                                            </a>
+                                            {# Ссылка на добавление оценки БЖБ/ТЖБ #}
+                                            <a href="{% url 'add_exam_grade' %}?subject={{ lesson.subject.id }}&class={{ lesson.school_class.id }}"
+                                               class="action-icon text-success" title='{% trans "БЖБ/ТЖБ бағасын қосу" %}'>
+                                                <i class="fas fa-file-signature"></i>
+                                            </a>
+                                            {# Сюда можно добавить ссылку на добавление задания, если реализуете #}
+                                            {# <a href="{% url 'add_assignment' %}?subject={{ lesson.subject.id }}&class={{ lesson.school_class.id }}"
+                                               class="action-icon text-info" title='{% trans "Тапсырма қосу" %}'>
+                                                <i class="fas fa-clipboard-list"></i>
+                                            </a> #}
+                                        {% else %}
+                                            <span class="text-muted">-</span> {# Не его урок #}
+                                        {% endif %}
+                                    </td>
+                                    {% endif %}
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted p-3">{% trans "Бұл күнге сабақ жоқ." %}</td>
+                                     {# Адаптируем colspan в зависимости от наличия колонки учителя и действий #}
+                                     {% with base_colspan=5 %} {# №, Время, Предмет, ДЗ, Статус #}
+                                        {% if display_role != 'teacher' %}{% with base_colspan=base_colspan|add:1 %}{% endwith %}{% endif %} {# + Учитель #}
+                                        {% if request.user.role == 'teacher' %}{% with base_colspan=base_colspan|add:1 %}{% endwith %}{% endif %} {# + Действия #}
+                                        <td colspan="{{ base_colspan }}" class="text-center text-muted p-3">{% trans "Бұл күнге сабақ жоқ." %}</td>
+                                     {% endwith %}
                                 </tr>
                                 {% endfor %}
                             </tbody>

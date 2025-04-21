@@ -10,5 +10,12 @@
       <jdbc-url>jdbc:mysql://whispr-whispr.l.aivencloud.com:20839/defaultdb</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="defaultdb@whispr-whispr.l.aivencloud.com" uuid="3d2ebf18-0b2d-4b43-b0f0-c3b4e26505e9">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://whispr-whispr.l.aivencloud.com:20839/defaultdb</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
