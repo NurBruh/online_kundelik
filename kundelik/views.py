@@ -1,95 +1,119 @@
 # kundelik/views.py
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from collections import defaultdict
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import views as auth_views, login, logout
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import views as auth_views, login, logout, authenticate
 from django.contrib import messages
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django import forms
-from django.utils import timezone # Используется в dashboard_schedule_view
-from django.http import HttpResponseForbidden, Http404
-
+from django.utils import timezone
+from django.db import IntegrityError # <-- Добавили для обработки unique_together
+# --- Импорты моделей ---
 from .models import (
     User, UserProfile, School, Class, Subject,
     Schedule, DailyGrade, ExamGrade
 )
+# --- Импорты форм ---
 from .forms import (
     UserRegistrationForm, CustomAuthenticationForm, SchoolForm,
-    ClassForm, SubjectForm, ScheduleForm, DailyGradeForm, ExamGradeForm
+    ClassForm, SubjectForm, ScheduleForm, DailyGradeForm, ExamGradeForm, UserEditForm, UserProfileEditForm
 )
 
 # ==================================
-# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (Пример)
+# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ==================================
+def is_student(user):
+    return user.is_authenticated and getattr(user, 'role', None) == 'student'
+def is_teacher(user):
+    return user.is_authenticated and getattr(user, 'role', None) == 'teacher'
+def is_parent(user):
+    return user.is_authenticated and getattr(user, 'role', None) == 'parent'
+def is_admin_or_director(user):
+    return user.is_authenticated and getattr(user, 'role', None) in ['admin', 'director']
+def is_school_staff(user):
+    return user.is_authenticated and getattr(user, 'role', None) in ['teacher', 'admin', 'director']
 
 def get_current_term():
-    """
-    Примерная функция для определения текущей четверти.
-    В реальном приложении логика может быть сложнее (из настроек, календаря).
-    """
     today = date.today()
-    # Очень упрощенный пример:
+    # TODO: Заменить на более надежную логику определения четверти
     if 9 <= today.month <= 10: return 1
     if 11 <= today.month <= 12: return 2
     if 1 <= today.month <= 3: return 3
     if 4 <= today.month <= 5: return 4
-    return None # Межсезонье или лето
+    return None # Лето или каникулы
 
-# ==================================
-# ОБЩИЕ СТРАНИЦЫ
-# ==================================
+def redirect_user_based_on_role(request, user):
+    role = getattr(user, 'role', None)
+    if role in ['student', 'teacher', 'parent', 'admin', 'director']:
+        # Всех направляем в расписание по умолчанию
+        return redirect('dashboard_schedule')
+    elif user.is_staff or user.is_superuser:
+         messages.info(request, "Перенаправление в панель администратора сайта.")
+         try:
+             return redirect(reverse('admin:index'))
+         except Exception as e:
+             print(f"Не удалось получить URL админки ('admin:index'): {e}")
+             messages.warning(request, "Не удалось перейти в панель администратора. Перенаправление в профиль.")
+             return redirect('dashboard_profile') # Запасной вариант
+    else:
+        messages.warning(request, "Сіздің рөліңіз жүйеде анықталмаған. Профиль бетіне бағытталдыңыз.")
+        return redirect('dashboard_profile')
 
 def home(request):
+    if request.user.is_authenticated:
+        return redirect_user_based_on_role(request, request.user)
     return render(request, 'home.html')
 
 def about(request):
     return render(request, 'about_us.html')
 
 def recommendations(request):
-    return render(request, 'recommendations.html')
+    # TODO: Реализовать логику страницы рекомендаций
+    messages.info(request, "Бұл бет әзірленуде.")
+    return render(request, 'recommendations.html') # Или редирект
 
 # ==================================
 # АУТЕНТИФИКАЦИЯ, РЕГИСТРАЦИЯ, ПАРОЛЬ
 # ==================================
-
 def register(request):
     if request.user.is_authenticated:
-        return redirect('home')
+         return redirect_user_based_on_role(request, request.user)
+
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            try:
-                # Создаем профиль сразу после создания пользователя
-                UserProfile.objects.create(user=user)
-            except Exception as e:
-                 print(f"Error creating UserProfile for {user.username}: {e}")
-                 messages.warning(request, "Тіркелу сәтті, бірақ профильді құруда қате пайда болды. Әкімшілікке хабарласыңыз.")
-            messages.success(request, "Тіркелу сәтті аяқталды! Енді жүйеге кіре аласыз.")
-            return redirect('login')
+            user = form.save() # UserCreationForm сохраняет пользователя
+            # Создаем профиль (или получаем, если он вдруг уже есть)
+            UserProfile.objects.get_or_create(user=user)
+            # Обновляем связь родителя, если она была указана в форме
+            parent_of_user = form.cleaned_data.get('parent_of')
+            if parent_of_user:
+                 user.parent_of = parent_of_user
+                 user.save(update_fields=['parent_of'])
+
+            login(request, user)
+            messages.success(request, f"Тіркелу сәтті аяқталды! Қош келдіңіз, {user.first_name or user.username}!")
+            return redirect_user_based_on_role(request, user)
         else:
             messages.error(request, "Тіркелу кезінде қателер пайда болды. Форманы тексеріңіз.")
     else:
         form = UserRegistrationForm()
+
     return render(request, 'register.html', {'form': form})
 
 def user_login(request):
     if request.user.is_authenticated:
-         return redirect('dashboard_schedule') # Перенаправляем сразу в дашборд
+        return redirect_user_based_on_role(request, request.user)
     if request.method == 'POST':
-        # Передаем request в форму для обработки CSRF и других контекстных данных
         form = CustomAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
             messages.success(request, f"Қош келдіңіз, {user.first_name or user.username}!")
-            # Определяем куда перенаправить в зависимости от роли (опционально)
-            # if user.role == 'teacher': return redirect('teacher_dashboard')
-            return redirect('dashboard_schedule') # По умолчанию в расписание дашборда
-        else:
-            messages.error(request, "Қате логин немесе құпия сөз.")
+            return redirect_user_based_on_role(request, user)
+        # else: Если форма невалидна, render покажет ошибки
     else:
         form = CustomAuthenticationForm()
     return render(request, 'login.html', {'form': form})
@@ -99,73 +123,99 @@ def user_logout(request):
     messages.info(request, "Сіз жүйеден сәтті шықтыңыз.")
     return redirect('home')
 
+# Используем стандартные view для сброса пароля, но с кастомными шаблонами
 class CustomPasswordResetView(auth_views.PasswordResetView):
-    template_name = 'recovery.html'
+    template_name = 'password_reset_form.html' # Используйте имя шаблона формы сброса
     email_template_name = 'password_reset_email.html'
     subject_template_name = 'password_reset_subject.txt'
     success_url = reverse_lazy('password_reset_done')
 
+# Определяем URL для стандартных представлений в urls.py, например:
+# path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='password_reset_done.html'), name='password_reset_done'),
+# path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name="password_reset_confirm.html"), name='password_reset_confirm'),
+# path('reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='password_reset_complete.html'), name='password_reset_complete'),
+
 # ==================================
 # ДАШБОРД ПОЛЬЗОВАТЕЛЯ
 # ==================================
-
 @login_required
 def dashboard_schedule_view(request):
     user = request.user
     schedules_queryset = Schedule.objects.none()
     schedules_by_date = defaultdict(list)
-
-    today = timezone.localdate()
-    start_of_week = today - timedelta(days=today.weekday())
-    end_of_week = start_of_week + timedelta(days=6)
-
-    target_user = user # По умолчанию смотрим расписание залогиненного пользователя
+    target_user = user # По умолчанию смотрим свое расписание (для учителя/админа)
     user_role = getattr(user, 'role', None)
     user_school = getattr(user, 'school', None)
+    display_mode = user_role # Как интерпретировать расписание
+    target_class = None # Класс, чье расписание смотрим (для студента/родителя)
+
+    # --- Получение опорной даты ---
+    try:
+        current_date_str = request.GET.get('date')
+        ref_date = datetime.strptime(current_date_str, '%Y-%m-%d').date() if current_date_str else timezone.localdate()
+    except (ValueError, TypeError):
+        ref_date = timezone.localdate()
+
+    # --- Вычисление границ недель ---
+    weekday = ref_date.weekday()
+    start_of_week = ref_date - timedelta(days=weekday)
+    end_of_week = start_of_week + timedelta(days=6)
+    prev_week_start = start_of_week - timedelta(days=7)
+    next_week_start = start_of_week + timedelta(days=7)
 
     try:
+        # --- Определение целевого пользователя/класса ---
         if user_role == 'parent':
-            # Ищем ученика, связанного с родителем
-            try:
-                # Предполагается, что у UserProfile есть OneToOne 'parent_of' на User (студента)
-                target_user = user.userprofile.parent_of
-                if not target_user:
-                    messages.warning(request, "Сіздің профиліңізге оқушы тіркелмеген.")
-                    target_user = None # Сбрасываем, чтобы не было ошибки дальше
-            except UserProfile.DoesNotExist:
-                 messages.warning(request, "Сіздің профиліңіз табылмады немесе оқушы тіркелмеген.")
-                 target_user = None
-            except AttributeError:
-                 messages.error(request, "Профиль мен оқушы байланысында қате ('parent_of').")
-                 target_user = None
-
-        # Получаем расписание для целевого пользователя (или для школы, если админ/директор)
-        if target_user and user_role in ['student', 'parent']: # Студент или родитель (смотрящий за студентом)
-             schedules_queryset = Schedule.objects.filter(
-                student=target_user, date__range=[start_of_week, end_of_week]
-            ).select_related('subject', 'teacher', 'school_class')
-        elif user_role == 'teacher':
-             schedules_queryset = Schedule.objects.filter(
-                teacher=user, date__range=[start_of_week, end_of_week]
-            ).select_related('subject', 'student', 'school_class')
-        elif user_role in ['admin', 'director']:
-            if user_school:
-                schedules_queryset = Schedule.objects.filter(
-                    school_class__school=user_school, date__range=[start_of_week, end_of_week]
-                ).select_related('subject', 'teacher', 'student', 'school_class')
-            elif user.is_superuser: # Суперюзер видит всё
-                schedules_queryset = Schedule.objects.filter(
-                    date__range=[start_of_week, end_of_week]
-                ).select_related('subject', 'teacher', 'student', 'school_class')
+            linked_student = getattr(user, 'parent_of', None)
+            if linked_student:
+                target_user = linked_student # Теперь цель - студент
+                display_mode = 'student'
+                user_school = getattr(target_user, 'school', user_school)
+                try:
+                    target_class = target_user.userprofile.grade
+                except (UserProfile.DoesNotExist, AttributeError):
+                     messages.warning(request, f"Байланысқан оқушы '{target_user.username}' профилі немесе сыныбы табылмады.")
             else:
-                messages.warning(request, "Мектеп кестесін көру үшін мектепке тіркелуіңіз керек.")
-        elif target_user: # Если target_user найден (для родителя), но роль не покрыта выше
-             messages.warning(request, f"'{user_role}' рөлі үшін кесте көрсетілмейді.")
+                messages.warning(request, "Сіздің профиліңізге оқушы тіркелмеген.")
+                target_user = None # Нет студента - нет расписания для родителя
+        elif user_role == 'student':
+            try:
+                target_class = user.userprofile.grade
+                if not target_class:
+                     messages.warning(request, "Сіз сыныпқа тіркелмегенсіз.")
+            except (UserProfile.DoesNotExist, AttributeError):
+                 messages.warning(request, "Профиль деректері толық емес, сынып анықталмады.")
 
-        # Сортировка и группировка по дате
-        schedules_queryset = schedules_queryset.order_by('date', 'time')
-        for lesson in schedules_queryset:
-            schedules_by_date[lesson.date].append(lesson)
+        # --- Получение данных расписания ---
+        if display_mode == 'student':
+            if target_class:
+                schedules_queryset = Schedule.objects.filter(
+                    school_class=target_class, date__range=[start_of_week, end_of_week]
+                ).select_related('subject', 'teacher', 'school_class__school')
+            # else: Если класса нет, queryset останется пустым
+        elif display_mode == 'teacher':
+            schedules_queryset = Schedule.objects.filter(
+                teacher=target_user, date__range=[start_of_week, end_of_week]
+            ).select_related('subject', 'school_class', 'school_class__school')
+        elif display_mode in ['admin', 'director']:
+             if user_school:
+                 # Показываем расписание всей школы админа/директора
+                 schedules_queryset = Schedule.objects.filter(
+                     school_class__school=user_school, date__range=[start_of_week, end_of_week]
+                 ).select_related('subject', 'teacher', 'school_class')
+             elif user.is_superuser: # Суперюзер видит всё
+                 schedules_queryset = Schedule.objects.filter(
+                     date__range=[start_of_week, end_of_week]
+                 ).select_related('subject', 'teacher', 'school_class', 'school_class__school')
+             else:
+                 messages.warning(request, "Мектеп кестесін көру үшін мектепке тіркелуіңіз керек.")
+        # Для других ролей schedules_queryset останется пустым
+
+        # --- Сортировка и группировка ---
+        if schedules_queryset.exists():
+            schedules_queryset = schedules_queryset.order_by('date', 'lesson_number') # Сортировка без времени
+            for lesson in schedules_queryset:
+                schedules_by_date[lesson.date].append(lesson)
 
     except Exception as e:
         messages.error(request, f"Кестені жүктеу кезінде күтпеген қате: {e}")
@@ -175,95 +225,129 @@ def dashboard_schedule_view(request):
         'schedules_by_date': dict(schedules_by_date),
         'view_date_start': start_of_week,
         'view_date_end': end_of_week,
-        'current_view': 'schedule' # Для подсветки активного пункта меню в базовом шаблоне
+        'current_view': 'schedule',
+        'display_role': display_mode,
+        'target_user': target_user if display_mode != 'student' else user, # Для заголовка (студент видит свое имя)
+        'viewing_student': target_user if display_mode == 'student' else None, # Явно передаем студента
+        'target_class': target_class,
+        'prev_week_date_str': prev_week_start.strftime('%Y-%m-%d'),
+        'next_week_date_str': next_week_start.strftime('%Y-%m-%d'),
     }
-    # Используем базовый шаблон дашборда, который будет включать нужный контент
-    # Вместо dashboard_base.html лучше использовать имя конкретного шаблона расписания,
-    # который наследуется от базового. Например, 'dashboard/schedule.html'
-    return render(request, 'dashboard_schedule.html', context) # УКАЖИТЕ ПРАВИЛЬНЫЙ ШАБЛОН
+    return render(request, 'dashboard_schedule.html', context)
+
+@login_required
+def profile_edit(request):
+    user = request.user
+    # Используем get_or_create для надежности
+    user_profile, created = UserProfile.objects.get_or_create(user=user)
+
+    if request.method == 'POST':
+        user_form = UserEditForm(request.POST, instance=user)
+        # Передаем instance профиля
+        profile_form = UserProfileEditForm(request.POST, request.FILES, instance=user_profile)
+
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, 'Профиль сәтті жаңартылды!')
+            return redirect('dashboard_profile')
+        else:
+            messages.error(request, 'Форманы толтыруда қателер пайда болды. Тексеріңіз.')
+    else: # GET
+        user_form = UserEditForm(instance=user)
+        profile_form = UserProfileEditForm(instance=user_profile) # Форма сама отфильтрует классы в __init__
+
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'current_view': 'profile',
+        'userprofile': user_profile # Передаем профиль для отображения текущего аватара
+    }
+    # profile_user не нужен, т.к. user есть по умолчанию, а профиль передается как userprofile
+    return render(request, 'profile_edit.html', context)
 
 @login_required
 def dashboard_grades_view(request):
     user = request.user
     user_role = getattr(user, 'role', None)
     target_student = None
+    student_class = None
     subject_grades_list = []
-    student_class_name = None
-    current_term = get_current_term() # Получаем текущую четверть
+    student_class_name = "Сынып анықталмаған"
+    current_term = get_current_term()
 
     try:
+        # Определяем студента
         if user_role == 'student':
             target_student = user
         elif user_role == 'parent':
-            try:
-                target_student = user.userprofile.parent_of
-                if not target_student:
-                    messages.warning(request, "Сіздің профиліңізге оқушы тіркелмеген.")
-            except UserProfile.DoesNotExist:
-                 messages.warning(request, "Сіздің профиліңіз табылмады немесе оқушы тіркелмеген.")
-            except AttributeError:
-                 messages.error(request, "Профиль мен оқушы байланысында қате ('parent_of').")
+            target_student = getattr(user, 'parent_of', None)
+            if not target_student:
+                messages.warning(request, "Сіздің профиліңізге оқушы тіркелмеген.")
+        elif is_teacher(user) or is_admin_or_director(user):
+             messages.info(request, "Бағалар журналын көру үшін арнайы бетке өтіңіз.")
         else:
-             # Покажем сообщение, что для этой роли просмотр оценок не реализован (или требует выбора ученика)
-             messages.info(request, "Бұл көрініс оқушылар мен ата-аналар үшін арналған.")
-             # Можно перенаправить или показать пустую страницу
-             # return redirect('dashboard_schedule')
+             messages.info(request, "Бағаларды көру рөліңіз үшін қолжетімсіз.")
 
+        # Получаем данные, если студент определен
         if target_student:
-            student_class = getattr(target_student, 'school_class', None)
-            student_class_name = student_class.name if student_class else "Белгісіз"
+            try:
+                student_profile = target_student.userprofile
+                student_class = student_profile.grade
+                if student_class:
+                    student_class_name = student_class.name
+                else:
+                    messages.warning(request, f"Оқушы '{target_student.username}' сыныпқа тіркелмеген.")
+            except (UserProfile.DoesNotExist, AttributeError):
+                messages.warning(request, f"Оқушы '{target_student.username}' профилі табылмады.")
 
-            if student_class and current_term:
-                # Получаем предметы класса (или назначенные студенту, если модель позволяет)
-                # subjects = Subject.objects.filter(school=student_class.school) # Пример: все предметы школы
-                # Или если предметы привязаны к классу:
-                subjects = student_class.subjects.all() if hasattr(student_class, 'subjects') else Subject.objects.filter(school=student_class.school)
+            if student_class:
+                subjects_qs = student_class.subjects.all().order_by('name')
+                if not subjects_qs.exists():
+                    messages.warning(request, f"{student_class_name} сыныбына пәндер тағайындалмаған.")
 
+                if current_term and subjects_qs.exists():
+                    for subject in subjects_qs:
+                        daily_grades = DailyGrade.objects.filter(
+                            student=target_student, subject=subject, term=current_term
+                        ).order_by('date').values('grade', 'date', 'comment')
 
-                for subject in subjects:
-                    # Получаем дневные оценки за четверть
-                    daily_grades = DailyGrade.objects.filter(
-                        student=target_student,
-                        subject=subject,
-                        # date__year=date.today().year, # Фильтр по году, если нужно
-                        term=current_term
-                    ).order_by('date').values_list('grade', flat=True)
+                        sor_grade_obj = ExamGrade.objects.filter(
+                            student=target_student, subject=subject, term=current_term, exam_type='SOR'
+                        ).first()
+                        soch_grade_obj = ExamGrade.objects.filter(
+                            student=target_student, subject=subject, term=current_term, exam_type='SOCH'
+                        ).first()
 
-                    # Получаем оценки за БЖБ (СОР) и ТЖБ (СОЧ)
-                    sor_grade = ExamGrade.objects.filter(
-                        student=target_student, subject=subject, term=current_term, exam_type='SOR'
-                    ).first() # Берем первую найденную (или None)
-                    soch_grade = ExamGrade.objects.filter(
-                        student=target_student, subject=subject, term=current_term, exam_type='SOCH'
-                    ).first() # Берем первую найденную (или None)
+                        term_grade_final = None # TODO: Реализовать расчет итоговой оценки
 
-                    # TODO: Получить итоговую оценку за четверть (если она хранится отдельно)
-                    term_grade_final = None # Заглушка
-
-                    subject_grades_list.append({
-                        'subject_name': subject.name,
-                        'daily_grades_list': list(daily_grades),
-                        'sor_grade': sor_grade.grade if sor_grade else None,
-                        'soch_grade': soch_grade.grade if soch_grade else None,
-                        'term_grade': term_grade_final # Используйте реальное значение
-                    })
-            elif not student_class:
-                 messages.warning(request, f"Оқушы '{target_student.username}' сыныпқа тіркелмеген.")
-            elif not current_term:
-                 messages.warning(request, "Ағымдағы оқу тоқсаны анықталмады.")
+                        subject_grades_list.append({
+                            'subject_name': subject.name,
+                            'daily_grades_list': list(daily_grades),
+                            'sor_grade': sor_grade_obj.grade if sor_grade_obj else None,
+                            'sor_max_grade': sor_grade_obj.max_grade if sor_grade_obj else None,
+                            'sor_comment': sor_grade_obj.comment if sor_grade_obj else None,
+                            'soch_grade': soch_grade_obj.grade if soch_grade_obj else None,
+                            'soch_max_grade': soch_grade_obj.max_grade if soch_grade_obj else None,
+                            'soch_comment': soch_grade_obj.comment if soch_grade_obj else None,
+                            'term_grade': term_grade_final
+                        })
+                elif not current_term:
+                     messages.warning(request, "Ағымдағы оқу тоқсаны анықталмады.")
 
     except Exception as e:
         messages.error(request, f"Бағаларды жүктеу кезінде күтпеген қате: {e}")
         print(f"Unexpected error in dashboard_grades_view: {e}")
 
     context = {
-        'student': target_student, # Передаем объект студента (или None)
+        'student': target_student, # Передаем объект студента
         'student_class_name': student_class_name,
         'current_term': current_term,
         'subject_grades': subject_grades_list,
-        'current_view': 'grades' # Для подсветки меню
+        'current_view': 'grades',
+        'display_role': user_role, # Роль того, кто смотрит страницу
     }
-    # Используем шаблон, который вы предоставили ранее
+    # Убедитесь, что шаблон daily_grades.html может отобразить эту структуру
     return render(request, 'daily_grades.html', context)
 
 @login_required
@@ -272,201 +356,297 @@ def dashboard_profile_view(request):
     user_profile = None
     try:
         user_profile = user.userprofile
-    except UserProfile.DoesNotExist:
-        pass # Профиль может быть еще не создан
-    except AttributeError:
-        messages.error(request, "Профильмен байланыс қатесі ('userprofile').")
-        print(f"AttributeError getting userprofile for {user.username}")
-    except Exception as e:
-        messages.error(request, f"Профильді жүктеу қатесі: {e}")
-        print(f"Error loading profile in dashboard: {e}")
+    except (UserProfile.DoesNotExist, AttributeError):
+        messages.info(request, "Профиль деректері әлі толық емес немесе қате.")
 
     context = {
-        'user': user,
+        'profile_user': user, # Пользователь, чей профиль отображается
         'userprofile': user_profile,
-        'current_view': 'profile' # Для подсветки меню
+        'current_view': 'profile',
     }
     return render(request, 'profile.html', context)
 
-# --- ЗАГЛУШКИ/РЕДИРЕКТЫ для других страниц дашборда (можно реализовать позже) ---
+# --- Заглушки/Редиректы (без изменений) ---
 @login_required
 def dashboard_exams_view(request):
-    # Эта view может быть похожа на dashboard_grades_view, но фокусироваться на ExamGrade
     messages.info(request, "Бұл бөлім ('БЖБ/ТЖБ') әзірленуде.")
-    # context = { 'current_view': 'exams' }
-    # return render(request, 'dashboard/exams.html', context)
-    return redirect('dashboard_schedule')
-
+    return redirect('dashboard_grades')
 @login_required
 def dashboard_contact_teacher_view(request):
     messages.info(request, "Бұл бөлім ('Мұғаліммен байланыс') әзірленуде.")
-    # context = { 'current_view': 'contact' }
-    # return render(request, 'dashboard/contact_teacher.html', context)
     return redirect('dashboard_schedule')
-
 @login_required
 def dashboard_settings_view(request):
     messages.info(request, "Бұл бөлім ('Баптаулар') әзірленуде.")
-    # context = { 'current_view': 'settings' }
-    # return render(request, 'dashboard/settings.html', context)
-    return redirect('dashboard_schedule')
-
-@login_required
-def profile_page_view(request):
-    # Можно просто перенаправить в дашборд-профиль
     return redirect('dashboard_profile')
-    # Или оставить старую логику, если шаблон 'profile.html' сильно отличается
-    # user = request.user
-    # user_profile = None
-    # try:
-    #     user_profile = user.userprofile
-    # except UserProfile.DoesNotExist: pass
-    # except AttributeError: messages.error(request, "Профильмен байланыс қатесі ('userprofile').")
-    # except Exception as e: messages.error(request, f"Профильді жүктеу кезінде күтпеген қате: {e}")
-    # context = { 'user': user, 'userprofile': user_profile }
-    # return render(request, 'profile.html', context)
-
-# ==================================
-# ОПЕРАЦИИ ДОБАВЛЕНИЯ (АДМИН/ДИРЕКТОР/УЧИТЕЛЬ)
-# ==================================
-# (Код для add_person, add_school, add_class, add_subject, add_schedule,
-# add_daily_grade, add_exam_grade остается в целом как был,
-# но с исправленными путями к шаблонам и потенциально улучшенной логикой
-# фильтрации форм в GET-запросах)
-
-# --- Пример исправленного add_daily_grade ---
 @login_required
-def add_daily_grade(request):
-    if not hasattr(request.user, 'role') or request.user.role != 'teacher':
-         return HttpResponseForbidden("Баға қоюға тек мұғалімнің рұқсаты бар.")
+def profile_page_view(request): # Старый URL
+    return redirect('dashboard_profile')
 
+# ==================================
+# ОПЕРАЦИИ ДОБАВЛЕНИЯ
+# ==================================
+def admin_director_required(view_func):
+    return user_passes_test(is_admin_or_director, login_url='login')(view_func)
+def teacher_required(view_func):
+    return user_passes_test(is_teacher, login_url='login')(view_func)
+def school_staff_required(view_func):
+    return user_passes_test(is_school_staff, login_url='login')(view_func)
+
+@login_required
+@admin_director_required
+def add_person(request):
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            if not request.user.is_superuser and hasattr(request.user, 'school'):
+                 user.school = request.user.school # Привязываем к школе админа
+            user.save() # Сохраняем User
+            UserProfile.objects.get_or_create(user=user) # Создаем профиль
+            # Обновляем parent_of, если был указан
+            parent_of_user = form.cleaned_data.get('parent_of')
+            if parent_of_user:
+                user.parent_of = parent_of_user
+                user.save(update_fields=['parent_of'])
+            messages.success(request, f"Пайдаланушы '{user.username}' сәтті қосылды.")
+            return redirect('add_person')
+        else:
+            messages.error(request, "Форма толтыруда қателер бар.")
+    else:
+        form = UserRegistrationForm()
+        if not request.user.is_superuser and hasattr(request.user, 'school') and request.user.school:
+             form.fields['school'].initial = request.user.school
+             # form.fields['school'].queryset = School.objects.filter(pk=request.user.school.pk)
+
+    context = {'form': form, 'current_view': 'add_person'}
+    return render(request, 'add_person.html', context) # Нужен шаблон add_person.html
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser, login_url='home')
+def add_school(request):
+    if request.method == 'POST':
+        form = SchoolForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Мектеп сәтті қосылды.")
+            return redirect('add_school')
+    else:
+        form = SchoolForm()
+    context = {'form': form, 'current_view': 'add_school'}
+    return render(request, 'add_school.html', context) # Нужен шаблон add_school.html
+
+@login_required
+@admin_director_required
+def add_class(request):
+    user_school = getattr(request.user, 'school', None)
+    if not user_school and not request.user.is_superuser:
+        messages.error(request, "Сынып қосу үшін мектепке тіркелуіңіз керек.")
+        return redirect('dashboard_profile')
+
+    if request.method == 'POST':
+        # Передаем школу в форму для фильтрации M2M
+        form = ClassForm(request.POST, school=user_school if not request.user.is_superuser else None)
+        # Ограничиваем выбор школы для не-суперюзера
+        if not request.user.is_superuser and user_school:
+            form.fields['school'].queryset = School.objects.filter(pk=user_school.pk)
+
+        if form.is_valid():
+            new_class = form.save(commit=False)
+            if not request.user.is_superuser:
+                new_class.school = user_school
+            if not new_class.school:
+                 form.add_error('school', 'Мектеп көрсетілмеген.')
+            else:
+                 try:
+                     new_class.save()
+                     form.save_m2m() # Сохраняем предметы (ManyToMany)
+                     messages.success(request, f"Сынып '{new_class.name}' сәтті қосылды.")
+                     return redirect('add_class')
+                 except IntegrityError: # Обработка unique_together для Class
+                      form.add_error('name', 'Бұл мектепте мұндай сынып бар.')
+
+    else: # GET
+        # Передаем школу в форму для фильтрации M2M при GET запросе
+        form = ClassForm(school=user_school if not request.user.is_superuser else None)
+        if not request.user.is_superuser and user_school:
+            form.fields['school'].queryset = School.objects.filter(pk=user_school.pk)
+            form.fields['school'].initial = user_school
+            # form.fields['school'].widget = forms.HiddenInput()
+
+    context = {'form': form, 'current_view': 'add_class'}
+    return render(request, 'add_class.html', context) # Нужен шаблон add_class.html
+
+@login_required
+@admin_director_required
+def add_subject(request):
+    user_school = getattr(request.user, 'school', None)
+    if not user_school and not request.user.is_superuser:
+        messages.error(request, "Пән қосу үшін мектепке тіркелуіңіз керек.")
+        return redirect('dashboard_profile')
+
+    if request.method == 'POST':
+        form = SubjectForm(request.POST)
+        if not request.user.is_superuser and user_school:
+            form.fields['school'].queryset = School.objects.filter(pk=user_school.pk)
+
+        if form.is_valid():
+            subject = form.save(commit=False)
+            if not request.user.is_superuser: subject.school = user_school
+            if not subject.school: form.add_error('school', 'Мектеп көрсетілмеген.')
+            else:
+                try:
+                    subject.save()
+                    messages.success(request, f"Пән '{subject.name}' сәтті қосылды.")
+                    return redirect('add_subject')
+                except IntegrityError:
+                     form.add_error('name', 'Бұл мектепте мұндай пән бар.')
+    else:
+        form = SubjectForm()
+        if not request.user.is_superuser and user_school:
+             form.fields['school'].queryset = School.objects.filter(pk=user_school.pk)
+             form.fields['school'].initial = user_school
+             # form.fields['school'].widget = forms.HiddenInput()
+
+    context = {'form': form, 'current_view': 'add_subject'}
+    return render(request, 'add_subject.html', context) # Нужен шаблон add_subject.html
+
+@login_required
+@school_staff_required
+def add_schedule(request):
+    user_school = getattr(request.user, 'school', None)
+    if not user_school and not request.user.is_superuser:
+        messages.error(request, "Кесте элементін қосу үшін мектепке тіркелуіңіз керек.")
+        return redirect('dashboard_profile')
+
+    # Передаем школу и пользователя в форму для фильтрации и установки initial
+    school_filter = user_school if not request.user.is_superuser else None
+
+    if request.method == 'POST':
+        form = ScheduleForm(request.POST, school=school_filter, user=request.user)
+        if form.is_valid():
+            schedule_item = form.save(commit=False)
+            # Доп. проверки (школа класса, учителя, предмета)
+            valid = True
+            if school_filter: # Проверяем только если не суперюзер
+                 if getattr(schedule_item.school_class, 'school', None) != school_filter:
+                     form.add_error('school_class', 'Сынып сіздің мектебіңізден емес.')
+                     valid = False
+                 if getattr(schedule_item.teacher, 'school', None) != school_filter:
+                     form.add_error('teacher', 'Мұғалім сіздің мектебіңізден емес.')
+                     valid = False
+                 if getattr(schedule_item.subject, 'school', None) != school_filter:
+                      form.add_error('subject', 'Пән сіздің мектебіңізден емес.')
+                      valid = False
+
+            if valid:
+                schedule_item.save()
+                messages.success(request, "Кесте элементі сәтті қосылды.")
+                return redirect('add_schedule')
+    else: # GET
+        form = ScheduleForm(school=school_filter, user=request.user)
+
+    context = {'form': form, 'current_view': 'add_schedule'}
+    return render(request, 'add_schedule.html', context) # Нужен шаблон add_schedule.html
+
+@login_required
+@teacher_required
+def add_daily_grade(request):
+    user_school = getattr(request.user, 'school', None)
+    if not user_school: # Учитель должен быть привязан к школе
+        messages.error(request, "Баға қою үшін мектепке тіркелуіңіз керек.")
+        return redirect('dashboard_profile')
+
+    # Передаем школу и учителя в форму
+    if request.method == 'POST':
+        form = DailyGradeForm(request.POST, school=user_school, user=request.user)
+        if form.is_valid():
+            grade = form.save(commit=False)
+            # Учитель уже установлен в __init__ формы
+            # Доп. проверки
+            valid = True
+            if getattr(grade.student, 'school', None) != user_school:
+                form.add_error('student', "Оқушы сіздің мектебіңізден емес.")
+                valid = False
+            if getattr(grade.subject, 'school', None) != user_school:
+                form.add_error('subject', "Пән сіздің мектебіңізден емес.")
+                valid = False
+            # TODO: Проверка, ведет ли учитель этот предмет у этого студента/класса
+
+            if valid:
+                try:
+                    grade.save()
+                    messages.success(request, "Күнделікті баға сәтті қойылды.")
+                    # Редирект для добавления следующей оценки (или на другую страницу)
+                    return redirect('add_daily_grade')
+                except IntegrityError:
+                    form.add_error(None, 'Мүмкін, бұл оқушыға осы пәннен осы күні баға қойылған (unique_together).')
+    else: # GET
+        form = DailyGradeForm(school=user_school, user=request.user)
+
+    context = {'form': form, 'current_view': 'add_daily_grade'}
+    return render(request, 'add_daily_grades.html', context) # Нужен шаблон add_daily_grades.html
+
+@login_required
+@teacher_required
+def add_exam_grade(request):
     user_school = getattr(request.user, 'school', None)
     if not user_school:
         messages.error(request, "Баға қою үшін мектепке тіркелуіңіз керек.")
-        return redirect('dashboard_profile') # Направляем в профиль, чтобы увидел проблему
+        return redirect('dashboard_profile')
 
+    # Передаем школу и учителя в форму
     if request.method == 'POST':
-        form = DailyGradeForm(request.POST)
-        # Устанавливаем учителя принудительно перед валидацией
-        form.instance.teacher = request.user
-        # Фильтруем queryset'ы перед валидацией
-        form.fields['student'].queryset = User.objects.filter(role='student', school=user_school)
-        form.fields['subject'].queryset = Subject.objects.filter(school=user_school) # Или только предметы учителя?
-
+        form = ExamGradeForm(request.POST, school=user_school, user=request.user)
         if form.is_valid():
             grade = form.save(commit=False)
-            # Дополнительные проверки (хотя queryset частично это делает)
+            # Учитель уже установлен в __init__
+            valid = True
             if getattr(grade.student, 'school', None) != user_school:
                 form.add_error('student', "Оқушы сіздің мектебіңізден емес.")
-            elif getattr(grade.subject, 'school', None) != user_school:
+                valid = False
+            if getattr(grade.subject, 'school', None) != user_school:
                 form.add_error('subject', "Пән сіздің мектебіңізден емес.")
-            else:
-                grade.save()
-                messages.success(request, "Күнделікті баға сәтті қойылды.")
-                # Перенаправляем на страницу оценок (или другую relevant страницу)
-                return redirect('dashboard_grades')
-    else: # GET request
-        form = DailyGradeForm(initial={'teacher': request.user})
-        form.fields['student'].queryset = User.objects.filter(role='student', school=user_school)
-        form.fields['subject'].queryset = Subject.objects.filter(school=user_school)
-        form.fields['teacher'].widget = forms.HiddenInput()
+                valid = False
+            # TODO: Проверка предмета учителя
 
-    context = {
-        'form': form,
-        'current_view': 'add_daily_grade'
-    }
-    return render(request, 'add_daily_grades.html', context)
+            if valid:
+                try:
+                    grade.save()
+                    messages.success(request, f"{grade.get_exam_type_display()} бағасы сәтті қойылды.")
+                    return redirect('add_exam_grade')
+                except IntegrityError:
+                     form.add_error(None, 'Мүмкін, бұл оқушыға осы пәннен осы тоқсанда бұл жұмыс түріне баға қойылған (unique_together).')
+    else: # GET
+        form = ExamGradeForm(school=user_school, user=request.user)
 
-# --- Остальные add_* views нужно аналогично проверить/исправить ---
-# Убедитесь, что они рендерят шаблоны из папки 'dashboard/' и
-# что фильтрация полей формы (особенно в GET) корректна для роли пользователя.
-
-@login_required
-def add_person(request, form=None):
-    # ... (логика как была, но рендер 'dashboard/add_person.html') ...
-     if not hasattr(request.user, 'role') or request.user.role not in ['admin', 'director']:
-         return HttpResponseForbidden("Рұқсат жоқ.")
-     # ... (остальная логика) ...
-     return render(request, 'add_person.html', {'form': form, 'current_view': 'add_person'})
-
-
-@login_required
-def add_school(request, form=None):
-    # ... (логика как была, но рендер 'dashboard/add_school.html') ...
-    if not request.user.is_superuser and getattr(request.user, 'role', None) != 'admin':
-        return HttpResponseForbidden("Рұқсат жоқ.")
-    # ... (остальная логика) ...
-    return render(request, 'add_school.html', {'form': form, 'current_view': 'add_school'})
-
-@login_required
-def add_class(request, form=None):
-    # ... (логика как была, но рендер 'dashboard/add_class.html') ...
-    if not hasattr(request.user, 'role') or request.user.role not in ['admin', 'director']:
-         return HttpResponseForbidden("Рұқсат жоқ.")
-    # ... (остальная логика) ...
-    return render(request, 'add_class.html', {'form': form, 'current_view': 'add_class'})
-
-@login_required
-def add_subject(request, form=None):
-    # ... (логика как была, но рендер 'dashboard/add_subject.html') ...
-    if not hasattr(request.user, 'role') or request.user.role not in ['admin', 'director']:
-        return HttpResponseForbidden("Рұқсат жоқ.")
-    # ... (остальная логика) ...
-    return render(request, 'add_subject.html', {'form':form, 'current_view': 'add_subject'})
-
-@login_required
-def add_schedule(request, form=None):
-    # ... (логика как была, но рендер 'dashboard/add_schedule.html') ...
-    if not hasattr(request.user, 'role') or request.user.role not in ['teacher', 'admin', 'director']:
-        return HttpResponseForbidden("Рұқсат жоқ.")
-    # ... (остальная логика) ...
-    return render(request, 'add_schedule.html', {'form': form, 'current_view': 'add_schedule'})
-
-
-@login_required
-def add_exam_grade(request):
-    # ... (логика как была, но рендер 'dashboard/add_exam_grade.html') ...
-     if not hasattr(request.user, 'role') or request.user.role != 'teacher':
-        return HttpResponseForbidden("Баға қоюға тек мұғалімнің рұқсаты бар.")
-     # ... (остальная логика) ...
-     # Проверяем фильтрацию формы для GET
-     form = ExamGradeForm(initial={'teacher': request.user})
-     user_school = getattr(request.user, 'school', None)
-     if user_school:
-         form.fields['student'].queryset = User.objects.filter(role='student', school=user_school)
-         form.fields['subject'].queryset = Subject.objects.filter(school=user_school)
-     form.fields['teacher'].widget = forms.HiddenInput()
-
-     return render(request, 'add_exam_grades.html', {'form': form, 'current_view': 'add_exam_grade'})
-
+    context = {'form': form, 'current_view': 'add_exam_grade'}
+    return render(request, 'add_exam_grades.html', context) # Нужен шаблон add_exam_grades.html
 
 # ==================================
-# УСТАРЕВШИЕ VIEWS (Редиректы)
+# УСТАРЕВШИЕ VIEWS (РЕДИРЕКТЫ)
 # ==================================
-# Оставляем редиректы для обратной совместимости
-
 @login_required
 def schedule(request):
-    messages.info(request, "Күнделік енді жеке кабинетте ('Дашборд') қолжетімді.")
+    messages.info(request, "Кесте енді жеке кабинетте ('Дашборд') қолжетімді.")
     return redirect('dashboard_schedule')
 
 @login_required
-def daily_grades(request, class_id=None): # Объединяем обе версии
+def daily_grades(request, class_id=None):
     messages.info(request, "Бағалар енді жеке кабинетте ('Дашборд') қолжетімді.")
-    # Если раньше был class_id, сейчас он не используется в dashboard_grades_view
-    # для студента/родителя. Админу/учителю может понадобиться выбор класса.
     return redirect('dashboard_grades')
 
 @login_required
-def exam_grades(request, class_id=None): # Объединяем обе версии
+def exam_grades(request, class_id=None):
     messages.info(request, "БЖБ/ТЖБ бағалары енді жеке кабинетте ('Дашборд') қолжетімді.")
-    return redirect('dashboard_exams')
+    return redirect('dashboard_grades')
 
 @login_required
 def journal(request):
-    messages.info(request, "Журнал енді жеке кабинетте ('Дашборд') қолжетімді.")
-    # Журнал обычно это смесь расписания и оценок, направим на оценки
-    return redirect('dashboard_grades')
+    messages.info(request, "Журнал функциялары енді жеке кабинетте ('Дашборд') қолжетімді.")
+    if is_teacher(request.user): return redirect('add_daily_grade')
+    elif is_student(request.user) or is_parent(request.user): return redirect('dashboard_grades')
+    else: return redirect('dashboard_schedule')
 
 @login_required
 def teacher_schedule(request):

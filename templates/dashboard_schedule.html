@@ -1,95 +1,105 @@
-{% extends 'dashboard_base.html' %}
-{% load static i18n %} {# Оставляем i18n на всякий случай, если будете использовать переводы #}
+{% extends 'dashboard_base.html' %} {# Наследуемся от базового шаблона дашборда #}
+{% load static i18n %}
 
-{% block dashboard_title %}SmartOqulyq - {% trans "Күнделік" %} / {% trans "Кесте" %}{% endblock %}
+{# --- Переопределяем заголовок страницы --- #}
+{% block dashboard_title %}SmartOqulyq - {% trans "Сабақ кестесі" %}{% endblock %}
 
+{# --- Переопределяем основной контент дашборда --- #}
 {% block dashboard_content %}
-    {# --- НАЧАЛО: Убедитесь, что в dashboard_base.html есть блок {% block dashboard_content %}{% endblock %} --- #}
 
-    {# Заголовок страницы внутри контентной области #}
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">{% trans "Күнделік" %} / {% trans "Менің кестем" %}</h1>
-        {# Напоминание: этим кнопкам нужен JS для работы #}
-        <div class="btn-toolbar mb-2 mb-md-0">
-          <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary">{% trans "Апта" %}</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary">{% trans "Ай" %}</button>
-          </div>
-          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-1">
-            <i class="fas fa-calendar-alt"></i>
-            {% trans "Күнді таңдау" %}
-          </button>
+    {# Заголовок внутри основной области #}
+    <h1 class="page-title">{% trans "Сабақ кестесі" %}</h1>
+
+    {# Отображение имени ученика/пользователя (карточка вынесена для группировки) #}
+    <div class="card shadow mb-4">
+        {# Показываем имя, если это расписание конкретного пользователя #}
+        {% if target_user %}
+        <div class="card-header py-3">
+             {# Используем target_user, который передан из view #}
+             {# Отображаем роль, если передана #}
+            <div class="student-name">
+                {{ target_user.get_full_name|default:target_user.username }}
+                {% if display_role %}<span class="badge bg-secondary ms-2">{{ display_role }}</span>{% endif %}
+            </div>
         </div>
-    </div>
-
-    {# Обертка для таблицы расписания #}
-    <div class="bg-white p-4 rounded shadow-sm">
-
-        {# Проверяем, есть ли данные для отображения #}
-        {% if schedules_by_date %}
-            {% for date, daily_schedules in schedules_by_date.items %}
-                {# Заголовок с датой и днем недели #}
-                <h3 class="h5 fw-bold text-white {% if forloop.counter|divisibleby:2 %}bg-primary{% else %}bg-secondary{% endif %} p-2 date-header mt-4 mb-3">
-                    {{ date|date:"d F Y" }} - {% if date.weekday == 0 %}{% trans "Дүйсенбі" %}{% elif date.weekday == 1 %}{% trans "Сейсенбі" %}{% elif date.weekday == 2 %}{% trans "Сәрсенбі" %}{% elif date.weekday == 3 %}{% trans "Бейсенбі" %}{% elif date.weekday == 4 %}{% trans "Жұма" %}{% elif date.weekday == 5 %}{% trans "Сенбі" %}{% elif date.weekday == 6 %}{% trans "Жексенбі" %}{% endif %}
-                </h3>
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped table-hover caption-top">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col" class="text-center">№</th>
-                                <th scope="col">{% trans "Пән" %}</th>
-                                <th scope="col" class="text-center">{% trans "Уақыт" %}</th>
-                                <th scope="col">{% trans "Тақырып/Пән" %}</th> {# Возвращаем к отображению предмета #}
-                                <th scope="col">{% trans "Мұғалім" %}</th>
-                                <th scope="col" class="text-center">{% trans "Статус" %}</th>
-                                <th scope="col">{% trans "Үй тапсырма" %}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for lesson in daily_schedules %}
-                            <tr>
-                                <td class="text-center align-middle">{{ lesson.lesson_number | default:forloop.counter }}</td>
-                                <td class="align-middle">{{ lesson.subject.name | default:"-" }}</td> {# Предмет #}
-                                <td class="text-center align-middle">{{ lesson.time|time:"H:i" | default:"-" }}</td> {# Время #}
-
-                                {# --- ИЗМЕНЕНИЕ ЗДЕСЬ: Возвращено к отображению имени предмета --- #}
-                                {# Если у вас НЕТ поля lesson.topic, этот вариант должен работать #}
-                                {# Если поле lesson.topic ЕСТЬ, замените обратно на lesson.topic #}
-                                <td class="align-middle">{{ lesson.subject.name | default:"-" }}</td>
-                                {# --- КОНЕЦ ИЗМЕНЕНИЯ --- #}
-
-                                <td class="small text-muted align-middle">{{ lesson.teacher.get_full_name | default:"-" }}</td> {# Учитель #}
-                                <td class="text-center align-middle">
-                                     {# Статус урока #}
-                                    {% with status_display=lesson.get_status_display %}
-                                        {% if lesson.status == 'completed' %}
-                                            <span class="text-success"><i class="fas fa-check me-1"></i>{{ status_display }}</span>
-                                        {% elif lesson.status == 'cancelled' %}
-                                            <span class="text-warning"><i class="fas fa-ban me-1"></i>{{ status_display }}</span>
-                                        {% elif lesson.status == 'not_completed' or lesson.status == 'absent' %}
-                                            <span class="text-danger"><i class="fas fa-times me-1"></i>{{ status_display }}</span>
-                                        {% else %} {# Запланирован / Другой статус #}
-                                            <span class="text-secondary">{{ status_display | default:"-" }}</span>
-                                        {% endif %}
-                                    {% endwith %}
-                                </td>
-                                <td class="align-middle">{{ lesson.task | default:"-" }}</td> {# Домашнее задание #}
-                            </tr>
-                            {% empty %}
-                            {# Сообщение, если на эту дату нет уроков #}
-                            <tr>
-                                <td colspan="7" class="text-center text-muted p-3">{% trans "Бұл күнге сабақ жоқ." %}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% endfor %}
-        {% else %}
-            {# Сообщение, если данных вообще нет #}
-            <div class="alert alert-warning text-center mt-4">{% trans "Расписание әлі толтырылмаған немесе таңдалған кезеңге сабақ жоқ." %}</div>
         {% endif %}
-    </div>
 
-    {# --- КОНЕЦ: Убедитесь, что в dashboard_base.html есть блок {% block dashboard_content %}{% endblock %} --- #}
-{% endblock %}
+        <div class="card-body"> {# Оборачиваем навигацию и таблицу в card-body #}
+            {# --- Навигация по датам --- #}
+            <div class="date-navigation mb-4">
+                 {# ВАЖНО: Замените '#' на реальные URL для навигации по датам #}
+                 {# Например: href="?date={{ previous_week_date|date:'Y-m-d' }}" #}
+                 <a href="#" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i> {% trans "Алдыңғы апта" %}</a>
+                 {# Отображаем диапазон дат из контекста #}
+                 <div class="current-date">{{ view_date_start|date:"d M" }} - {{ view_date_end|date:"d M Y" }}</div>
+                 {# Например: href="?date={{ next_week_date|date:'Y-m-d' }}" #}
+                 <a href="#" class="btn btn-outline-secondary btn-sm">{% trans "Келесі апта" %} <i class="fas fa-arrow-right ms-1"></i></a>
+            </div>
+
+            {# --- Отображение расписания по дням --- #}
+            {% if schedules_by_date %}
+                {% for date, daily_schedules in schedules_by_date.items %}
+                    {# Заголовок дня недели #}
+                     <h3 class="h5 fw-bold mt-4 mb-3 border-bottom pb-2">
+                        {{ date|date:"l, d F Y" }} {# Полный формат даты и дня недели #}
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="text-center" style="width: 5%;">№</th>
+                                    <th scope="col" style="width: 15%;">{% trans "Уақыт" %}</th> {# Уменьшил ширину #}
+                                    <th scope="col" style="width: 25%;">{% trans "Пән" %} / {% trans "Тақырып" %}</th> {# Объединил #}
+                                    <th scope="col" style="width: 35%;">{% trans "Үй тапсырма" %}</th> {# Увеличил ширину #}
+                                    <th scope="col" class="text-center" style="width: 10%;">{% trans "Статус" %}</th>
+                                    <th scope="col" style="width: 10%;">{% trans "Мұғалім" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lesson in daily_schedules %}
+                                <tr>
+                                    <td class="text-center align-middle">{{ lesson.lesson_number|default:forloop.counter }}</td>
+                                    <td class="text-center align-middle">{{ lesson.time_start|time:"H:i"|default:"-" }} - {{ lesson.time_end|time:"H:i"|default:"" }}</td> {# Пример с start/end time #}
+                                    <td class="align-middle fw-medium">
+                                        {{ lesson.subject.name|default:"-" }}
+                                        {# ПРОВЕРЬТЕ: Если у урока есть отдельное поле 'topic', используйте его #}
+                                        {% if lesson.topic %}
+                                           <br><small class="text-muted">{{ lesson.topic }}</small>
+                                        {% endif %}
+                                    </td>
+                                    {# ПРОВЕРЬТЕ: Убедитесь, что 'lesson.task' содержит именно домашнее задание #}
+                                    <td class="align-middle small">{{ lesson.task|default:"-" }}</td> {# Домашнее задание #}
+                                    <td class="text-center align-middle">
+                                        {# Статус урока с иконками (логика статусов может отличаться) #}
+                                        {% with status_display=lesson.get_status_display|default:lesson.status %}
+                                            {% if lesson.status == 'completed' or lesson.status == 'checked' %}
+                                                <span class="text-success" title="{{ status_display }}"><i class="fas fa-check-circle"></i></span>
+                                            {% elif lesson.status == 'not_completed' or lesson.status == 'missed' %}
+                                                <span class="text-danger" title="{{ status_display }}"><i class="fas fa-times-circle"></i></span>
+                                            {% elif lesson.status == 'assigned' or lesson.status == 'pending' %}
+                                                 <span class="text-warning" title="{{ status_display }}"><i class="far fa-clock"></i></span> {# Пример для 'в процессе' #}
+                                            {% else %}
+                                                <span class="text-secondary" title="{{ status_display }}"><i class="far fa-circle"></i></span> {# Неизвестный или 'назначен' #}
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                     <td class="small text-muted align-middle">{{ lesson.teacher.get_full_name|default:"-" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted p-3">{% trans "Бұл күнге сабақ жоқ." %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endfor %} {# Конец цикла по дням #}
+            {% else %}
+                {# Сообщение, если на выбранную неделю нет расписания #}
+                <div class="alert alert-light text-center mt-4">{% trans "Таңдалған кезеңге сабақ кестесі табылмады." %}</div>
+            {% endif %} {# Конец проверки schedules_by_date #}
+
+        </div> {# Конец card-body #}
+    </div> {# Конец card #}
+
+{% endblock %} {# Конец блока dashboard_content #}
