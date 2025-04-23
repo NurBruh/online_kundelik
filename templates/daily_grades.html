@@ -1,26 +1,28 @@
 {% extends 'dashboard_base.html' %}
 {% load static i18n %}
 
-{% block dashboard_title %}{% trans "Бағалар" %}{% endblock %}
+{% block dashboard_title %}{% trans "Бағалар" %}{% endblock %} {# <-- ОДИН РАЗ #}
 
 {% block dashboard_content %}
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap"> {# Обертка для заголовка и селектора #}
-        <h1 class="page-title mb-0">{% trans "Бағалар" %}</h1> {# Убрал нижний марджин у заголовка #}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <h1 class="page-title mb-0 me-3">
+            {% trans "Бағалар" %}
+            {% if student %}
+                <span class="text-muted fs-5">- {{ student.get_full_name|default:student.username }}</span>
+            {% endif %}
+        </h1>
 
-        {# --- ДОБАВЛЕН БЛОК ВЫБОРА ЧЕТВЕРТИ --- #}
-        {% if available_terms %} {# Показываем выбор только если есть доступные четверти #}
+        {# --- БЛОК ВЫБОРА ЧЕТВЕРТИ --- #}
+        {% if available_terms %}
         <div class="d-flex align-items-center">
             <label for="termSelect" class="form-label me-2 mb-0 fw-normal">{% trans "Тоқсан:" %}</label>
-            <select class="form-select form-select-sm w-auto" id="termSelect" onchange="location = this.value;">
-                {# Генерируем URL с параметром term для каждой опции #}
+            <select class="form-select form-select-sm w-auto" id="termSelect" onchange="if(this.value) window.location.href=this.value;">
                 {% url 'dashboard_grades' as base_grades_url %}
                 {% for term_num in available_terms %}
-                    <option value="{{ base_grades_url }}?term={{ term_num }}" {% if term_num == current_term %}selected{% endif %}>
+                    <option value="{{ request.path }}?term={{ term_num }}" {% if term_num == current_term %}selected{% endif %}>
                         {{ term_num }}-{% trans "тоқсан" %}
                     </option>
                 {% endfor %}
-                {# Можно добавить опцию для просмотра всех оценок, если нужно #}
-                {# <option value="{{ base_grades_url }}">{% trans "Барлығы" %}</option> #}
             </select>
         </div>
         {% endif %}
@@ -30,13 +32,12 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap">
             <h6 class="m-0 font-weight-bold text-primary">
-                {# Используем переменную current_term, которая теперь отражает выбранную четверть #}
                 {% blocktrans with class_name=student_class_name|default:"Белгісіз" term=current_term|default:"Ағымдағы" %}
                 {{ class_name }} сынып - {{ term }} тоқсан
                 {% endblocktrans %}
             </h6>
             <a href="{% url 'dashboard_schedule' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="fas fa-arrow-left me-1"></i> {% trans "Артқа" %} {# Ссылка ведет на расписание #}
+                <i class="fas fa-arrow-left me-1"></i> {% trans "Кестеге" %}
             </a>
         </div>
         <div class="card-body">
@@ -46,19 +47,18 @@
                         <tr>
                             <th style="width: 5%;">№</th>
                             <th style="width: 25%;">{% trans "Пән" %}</th>
-                            <th>{% trans "Күнделікті бағалар (баға/күн)" %}</th>
-                            <th style="width: 10%;">{% trans "БЖБ" %}</th>
-                            <th style="width: 10%;">{% trans "ТЖБ" %}</th>
-                            <th style="width: 10%;">{% trans "Тоқсан" %}</th>
+                            <th>{% trans "Күнделікті бағалар" %} <small class="text-muted fw-normal">({% trans "баға/күн" %})</small></th>
+                            <th class="text-center" style="width: 10%;">{% trans "БЖБ" %}</th>
+                            <th class="text-center" style="width: 10%;">{% trans "ТЖБ" %}</th>
+                            <th class="text-center" style="width: 10%;">{% trans "Тоқсан" %}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {# Цикл по предметам и оценкам (остается без изменений, т.к. view теперь передает объекты) #}
                         {% for grade_info in subject_grades %}
                         <tr>
                             <td>{{ forloop.counter }}</td>
                             <td class="text-start align-middle">{{ grade_info.subject_name }}</td>
-                            <td class="align-middle">
+                            <td class="align-middle daily-grades-cell">
                                 {% for grade_data in grade_info.daily_grades_list %}
                                     <span class="grade-badge
                                         {% with grade_val=grade_data.grade %}
@@ -69,7 +69,8 @@
                                         {% else %} grade-default {% endif %}
                                         {% endwith %}"
                                         title="{{ grade_data.date|date:'d.m.Y' }}{% if grade_data.comment %}: {{ grade_data.comment }}{% endif %}">
-                                        {{ grade_data.grade }} <small class="text-white-50">({{ grade_data.date|date:'d.m' }})</small>
+                                        {{ grade_data.grade }}
+                                        <div class="grade-date-subtext">{{ grade_data.date|date:'d.m' }}</div>
                                     </span>
                                 {% empty %}
                                     <span class="text-muted">-</span>
@@ -81,11 +82,26 @@
                              <td class="text-center align-middle" title="{% if grade_info.soch_max_grade %}{% trans 'Макс:' %} {{ grade_info.soch_max_grade }}{% endif %}{% if grade_info.soch_comment %}. {{ grade_info.soch_comment }}{% endif %}">
                                 {{ grade_info.soch_grade|default:"-" }}
                             </td>
-                            <td class="text-center align-middle"><b>{{ grade_info.term_grade|default:"-" }}</b></td>
+                            <td class="text-center align-middle fw-bold fs-5
+                                {% with final_grade=grade_info.term_grade %}
+                                {% if final_grade == 5 %} text-success
+                                {% elif final_grade == 4 %} text-warning
+                                {% elif final_grade == 3 %} text-danger
+                                {% elif final_grade == 2 %} text-secondary
+                                {% endif %}
+                                {% endwith %}">
+                                {{ grade_info.term_grade|default:"-" }}
+                            </td>
                         </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">{% trans "Таңдалған тоқсанға бағалар әлі енгізілмеген." %}</td> {# Уточнено сообщение #}
+                                <td colspan="6" class="text-center text-muted py-4">
+                                     {% if current_term %}
+                                         {% trans "Таңдалған тоқсанға бағалар әлі енгізілмеген." %}
+                                     {% else %}
+                                         {% trans "Бағаларды көру үшін тоқсанды таңдаңыз." %}
+                                     {% endif %}
+                                 </td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -93,5 +109,19 @@
             </div>
         </div>
     </div>
-    {# Подвал будет взят из dashboard_base.html #}
+    {# Стили теперь в dashboard_base.html, но можно оставить специфичные здесь в extra_css #}
+{% endblock %}
+
+{% block extra_css %}
+{# Стили для оценок можно оставить здесь или перенести в dashboard_base.html #}
+<style>
+    .grade-badge { display: inline-block; min-width: 40px; padding: 0.3em 0.5em; margin: 0.15em; font-size: 0.9rem; font-weight: 600; line-height: 1; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: 0.375rem; position: relative; }
+    .grade-date-subtext { font-size: 0.65rem; font-weight: 400; display: block; margin-top: 2px; color: inherit; opacity: 0.8; }
+    .grade-5 { background-color: #1cc88a; }
+    .grade-4 { background-color: #f6c23e; color: #5a5c69 !important;}
+    .grade-3 { background-color: #e74a3b; }
+    .grade-2 { background-color: #858796; }
+    .grade-default { background-color: #5a5c69; }
+    .daily-grades-cell { line-height: 1.2; }
+</style>
 {% endblock %}

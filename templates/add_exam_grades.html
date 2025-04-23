@@ -3,87 +3,152 @@
 
 {% block dashboard_title %}{% trans "БЖБ/ТЖБ бағасын қосу" %}{% endblock %}
 
+{% block extra_css %}
+{# add_daily_grades.html-дағыдай стильдер #}
+<style>
+    .class-selector-card {
+        background-color: #f8f9fa;
+        border-left: 4px solid #198754; /* Жасыл жолақ (БЖБ/ТЖБ үшін) */
+        border-radius: .375rem;
+    }
+    .form-label {
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+
 {% block dashboard_content %}
 
-    {# Заголовок страницы #}
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">{% trans "БЖБ/ТЖБ бағасын қосу" %}</h1>
     </div>
 
-    {# Отображаем форму, если она передана #}
-    {% if form %}
-        <div class="card shadow-sm">
+    {# --- БЛОК ВЫБОРА КЛАССА --- #}
+    <div class="card shadow-sm mb-4 class-selector-card">
+        <div class="card-body">
+            <form method="get" action="" class="row g-3 align-items-center">
+                <div class="col-md-6 col-lg-4">
+                    <label for="classSelect" class="form-label">{% trans "Сыныпты таңдаңыз:" %}</label>
+                    <select class="form-select form-select-sm" id="classSelect" name="class_id" onchange="this.form.submit()">
+                        <option value="">-- {% trans "Сынып" %} --</option>
+                        {% for class_item in teacher_classes %}
+                            <option value="{{ class_item.pk }}" {% if selected_class and selected_class.pk == class_item.pk %}selected{% endif %}>
+                                {{ class_item.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                 {# Ағымдағы URL параметрлерін сақтау үшін #}
+                 {% for key, value in request.GET.items %}
+                    {% if key != 'class_id' %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endif %}
+                 {% endfor %}
+                <div class="col-auto">
+                    {# Батырма қажет емес #}
+                </div>
+                 {% if not selected_class %}
+                 <div class="col-12">
+                     <small class="form-text text-muted">
+                        {% trans "Баға қою үшін жоғарыдан сыныпты таңдаңыз." %}
+                     </small>
+                 </div>
+                 {% endif %}
+            </form>
+        </div>
+    </div>
+    {# --- КОНЕЦ БЛОКА ВЫБОРА КЛАССА --- #}
+
+    {# Django messages жүйесі хабарламаларды көрсетеді #}
+
+    {# Форманы тек 'show_form' True болғанда көрсету #}
+    {% if show_form %}
+        <div class="card shadow-sm mt-4">
+             <div class="card-header py-3">
+                <h5 class="mb-0">
+                    {% blocktrans with class_name=selected_class.name %}БЖБ/ТЖБ бағасын қою: {{ class_name }} сыныбы{% endblocktrans %}
+                    <span class="badge bg-secondary rounded-pill ms-2">{{ students_count }} {% trans "оқушы" %}</span>
+                </h5>
+            </div>
             <div class="card-body">
                 <form method="post" action="">
                     {% csrf_token %}
+                    <input type="hidden" name="selected_class_id" value="{{ selected_class.pk }}">
 
-                    {# Отображение общих ошибок формы #}
                     {% if form.non_field_errors %}
                         <div class="alert alert-danger" role="alert">
-                            {% for error in form.non_field_errors %}
-                                <p class="mb-0">{{ error }}</p>
-                            {% endfor %}
+                            {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
                         </div>
                     {% endif %}
 
-                    {# Итерация по полям формы #}
-                    {% for field in form %}
-                        {# Скрытые поля #}
-                        {% if field.is_hidden %}
-                            {{ field }}
-                        {% else %}
-                            <div class="mb-3">
-                                {# Метка поля #}
-                                <label for="{{ field.id_for_label }}" class="form-label">
-                                    {{ field.label }}{% if field.field.required %}<span class="text-danger">*</span>{% endif %}
-                                </label>
+                    <div class="row">
+                        {% for field in form %}
+                            {% if not field.is_hidden %}
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ field.id_for_label }}" class="form-label">
+                                        {{ field.label }}{% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                                    </label>
 
-                                {# Поле ввода #}
-                                {% if field.name == 'date' %}
-                                    {# Можно указать type="date" для удобства #}
-                                    {{ field.as_widget.attrs.class }} {% if field.errors %}is-invalid{% endif %} type="date"
-                                {% else %}
-                                     {{ field.as_widget.attrs.class }} {% if field.errors %}is-invalid{% endif %}
-                                {% endif %}
-                                {{ field }}
+                                    {# --- СТУДЕНТ ӨРІСІН ТЕКСЕРУ (ТҮЗЕТІЛГЕН) --- #}
+                                    {% if field.name == 'student' %}
+                                        {# students_count контекст айнымалысын пайдалану #}
+                                        {% if students_count > 0 %}
+                                            {{ field }} {# Стандартты Select көрсету #}
+                                        {% else %}
+                                            <select class="form-select is-invalid" disabled><option>{% trans "Оқушылар жоқ" %}</option></select>
+                                            <div class="invalid-feedback d-block">{% trans "Бұл сыныпта оқушылар табылмады." %}</div>
+                                        {% endif %}
+                                    {# --- ТҮЗЕТУ СОҢЫ --- #}
+                                    {% else %}
+                                        {# Басқа өрістерді көрсету #}
+                                        {% if field.field.widget.input_type == 'select' %}
+                                            {{ field.as_widget }}
+                                        {% elif field.field.widget.input_type == 'number' %}
+                                             {{ field.as_widget }}
+                                        {% elif field.field.widget.input_type == 'text' or field.field.widget.input_type == 'email' %}
+                                            {{ field.as_widget }}
+                                        {% elif field.name == 'date' %}
+                                            <input type="date" name="{{ field.name }}" id="{{ field.id_for_label }}"
+                                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                                   value="{{ field.value|date:'Y-m-d'|default:'' }}" {% if field.field.required %}required{% endif %}>
+                                        {% else %}
+                                            {{ field }}
+                                        {% endif %}
+                                    {% endif %}
 
-                                {# Ошибки поля #}
-                                {% if field.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in field.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-
-                                {# Текст помощи #}
-                                {% if field.help_text %}
-                                    <div class="form-text">{{ field.help_text|safe }}</div>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-
-                    <hr> {# Разделитель #}
-
-                    <div class="text-end">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-file-signature me-1"></i> {% trans "Бағаны қосу" %}
-                        </button>
-                         {# Кнопка отмены, ведущая на главную дашборда или список экзаменационных оценок #}
-                         <a href="{% url 'dashboard_schedule' %}" class="btn btn-secondary">{% trans "Бас тарту" %}</a>
-                         {# Если есть страница exam_grades: <a href="{% url 'exam_grades' %}" class="btn btn-secondary">{% trans "Бас тарту" %}</a> #}
+                                    {% if field.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in field.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if field.help_text %}
+                                        <div class="form-text">{{ field.help_text|safe }}</div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                {{ field }} {# Жасырын өрістерді көрсету #}
+                            {% endif %}
+                        {% endfor %}
                     </div>
 
-                </form>
-            </div> {# end card-body #}
-        </div> {# end card #}
+                    <hr>
 
-    {% else %}
-        {# Сообщение, если форма не доступна #}
-        <div class="alert alert-warning" role="alert">
-            {% trans "Форманы көрсету мүмкін емес. Рұқсаттарыңызды тексеріңіз." %}
+                    <div class="text-end mt-3">
+                        {# Батырманы тек студенттер бар болса ғана активті ету #}
+                        <button type="submit" class="btn btn-success" {% if students_count == 0 %}disabled{% endif %}>
+                            <i class="fas fa-file-signature me-1"></i> {% trans "Бағаны қосу" %}
+                        </button>
+                         <a href="?class_id={{ selected_class.pk }}" class="btn btn-outline-secondary">{% trans "Тазарту" %}</a>
+                    </div>
+                </form>
+            </div>
         </div>
+    {# Егер форма көрсетілмесе, бірақ сынып таңдалса #}
+    {% elif selected_class and not show_form %}
+         <a href="{% url 'add_exam_grade' %}" class="btn btn-secondary mt-3">
+             <i class="fas fa-arrow-left me-1"></i> {% trans "Басқа сынып таңдау" %}
+         </a>
     {% endif %}
 
 {% endblock %}

@@ -1,67 +1,51 @@
-{% extends 'dashboard_base.html' %} {# --- ИЗМЕНЕНО: Наследуемся от базы дашборда --- #}
+{% extends 'dashboard_base.html' %}
 {% load static i18n %}
 
-{# --- ИЗМЕНЕНО: Устанавливаем заголовок через блок базы --- #}
 {% block dashboard_title %}{% trans "Менің профилім" %} - SmartOqulyq{% endblock %}
 
-{# --- ИЗМЕНЕНО: Добавляем специфичные CSS в блок базы --- #}
 {% block extra_css %}
 <style>
     .profile-avatar-container {
         position: relative;
-        width: 150px; /* Можно настроить */
+        width: 150px; /* Аватар өлшемі */
         height: 150px;
-        margin: 0 auto 1.5rem auto;
+        margin: 0 auto 1.5rem auto; /* Ортаға жақындату */
     }
     .profile-avatar {
         width: 100%;
         height: 100%;
-        object-fit: cover;
-        border-radius: 50%;
-        border: 3px solid #e9ecef; /* Светлая граница */
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        object-fit: cover; /* Суретті пропорциясын сақтай отырып, сыйғызу */
+        border-radius: 50%; /* Дөңгелектеу */
+        border: 3px solid #dee2e6; /* Ашық сұр жиек */
+        background-color: #f8f9fa; /* Фон түсі (егер сурет жүктелмесе) */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Кішігірім көлеңке */
     }
     .edit-avatar-button {
-        position: absolute;
-        bottom: 5px;
-        right: 5px;
-        background-color: var(--bs-primary); /* Цвет кнопки Bootstrap */
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 35px;
-        height: 35px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: background-color 0.2s;
-        font-size: 0.9rem;
-        text-decoration: none;
+        position: absolute; bottom: 5px; right: 5px;
+        background-color: var(--bs-primary); color: white;
+        border: none; border-radius: 50%;
+        width: 35px; height: 35px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: background-color 0.2s;
+        font-size: 0.9rem; text-decoration: none;
         box-shadow: 0 2px 4px rgba(0,0,0,.2);
     }
-    .edit-avatar-button:hover {
-        background-color: #0b5ed7; /* Более темный синий при наведении */
-        color: white;
-    }
-    .profile-data dl dt {
-        font-weight: 600;
-        color: #495057; /* Немного темнее для заголовков */
-    }
-     .profile-data dl dd {
-        color: #6c757d; /* Стандартный серый для данных */
-    }
+    .edit-avatar-button:hover { background-color: #0a58ca; color: white; } /* Hover кезіндегі түс */
+    .profile-data dl dt { font-weight: 600; color: #495057; padding-top: 0.5rem; }
+    .profile-data dl dd { color: #212529; padding-top: 0.5rem; margin-bottom: 0.5rem; } /* Мазмұнның түсі */
+    .profile-data .card-body { padding: 2rem; }
+    .border-end-md { border-right: 1px solid #dee2e6 !important; }
+    @media (max-width: 767.98px) { .border-end-md { border-right: none !important; border-bottom: 1px solid #dee2e6 !important; padding-bottom: 1.5rem; } }
 </style>
 {% endblock %}
 
-{# --- ИЗМЕНЕНО: Весь контент теперь внутри этого блока --- #}
 {% block dashboard_content %}
     <div class="row justify-content-center">
-        <div class="col-lg-10 col-md-12"> {# Немного шире колонка для лучшего вида #}
+        <div class="col-lg-10 col-md-12">
 
             <h1 class="page-title mb-4">{% trans "Менің профилім" %}</h1>
 
-            {# === Сообщения пользователю (например, после сохранения) === #}
+            {# Django messages жүйесінің хабарламаларын көрсету #}
             {% if messages %}
                 {% for message in messages %}
                     <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
@@ -72,49 +56,74 @@
             {% endif %}
 
             <div class="card shadow-sm profile-data">
-                <div class="card-body p-4">
+                <div class="card-body">
                     <div class="row">
-                        {# --- Левая колонка: Аватар и имя --- #}
-                        <div class="col-md-4 text-center mb-4 mb-md-0 border-end-md"> {# Добавлена граница справа на md+ #}
-                            <div class="profile-avatar-container mx-auto">
-                                 {# Используем profile_user из контекста для аватара #}
-                                <img src="{% if profile_user.userprofile.avatar %}{{ profile_user.userprofile.avatar.url }}{% else %}{% static 'image/default_avatar.png' %}{% endif %}"
-                                     alt="{% trans 'Профиль суреті' %}"
-                                     class="profile-avatar">
+                        {# --- Сол жақ колонка: Аватар және негізгі ақпарат --- #}
+                        <div class="col-md-4 text-center mb-4 mb-md-0 border-end-md">
+                            <div class="profile-avatar-container">
+                                {% comment %}
+                                    Контексттен 'userprofile' объектісін күтеміз.
+                                    Ол profile_user-мен байланысты UserProfile болуы керек.
+                                {% endcomment %}
+                                {% with profile_avatar=userprofile.avatar %}
+                                    {# Тексеру: userprofile бар ма? #}
+                                    {% if userprofile %}
+                                        {# Тексеру: аватар бар ма, URL бар ма және ол әдепкі емес пе? #}
+                                        {% if profile_avatar and profile_avatar.url and profile_avatar.url != profile_avatar.field.default %}
+                                            <img src="{{ profile_avatar.url }}"
+                                                 alt="{% trans 'Профиль суреті' %}"
+                                                 class="profile-avatar"
+                                                 onerror="this.onerror=null; this.src='{% static 'image/default_avatar.png' %}';"> {# Сурет жүктелмесе, әдепкіні көрсету #}
+                                        {% else %}
+                                            {# Егер аватар жоқ болса немесе ол әдепкі болса, статикалық әдепкі суретті көрсету #}
+                                            <img src="{% static 'image/default_avatar.png' %}"
+                                                 alt="{% trans 'Стандартты аватар' %}"
+                                                 class="profile-avatar">
+                                        {% endif %}
+                                    {% else %}
+                                         {# Егер userprofile мүлдем жоқ болса (мысалы, жаңадан тіркелгенде) #}
+                                          <img src="{% static 'image/default_avatar.png' %}"
+                                                 alt="{% trans 'Стандартты аватар' %}"
+                                                 class="profile-avatar">
+                                    {% endif %}
+                                {% endwith %}
 
-                                {# --- Кнопка редактирования ведет на страницу редактирования --- #}
+                                {# Өңдеу батырмасы #}
                                 <a href="{% url 'profile_edit' %}" class="edit-avatar-button" title="{% trans 'Профильді өңдеу' %}">
                                     <i class="fas fa-pencil-alt"></i>
                                 </a>
                             </div>
-                             {# Используем profile_user из контекста для имени #}
+                             {# Аты-жөні және рөлі #}
                             <h4 class="mt-3 mb-1">{{ profile_user.get_full_name|default:profile_user.username }}</h4>
-                            <p class="text-muted mb-0">{{ profile_user.userprofile.role|default:"Рөл белгісіз" }}</p> {# Предполагаем, что роль в UserProfile #}
+                            <p class="text-muted mb-0">{{ profile_user.get_role_display|default:"Рөл белгісіз" }}</p>
                         </div>
 
-                        {# --- Правая колонка: Данные --- #}
-                        <div class="col-md-8 ps-md-4"> {# Отступ слева на md+ #}
+                        {# --- Оң жақ колонка: Жеке деректер --- #}
+                        <div class="col-md-8 ps-md-4">
                             <h5 class="mb-3 border-bottom pb-2">{% trans "Жеке деректер" %}</h5>
-                            <dl class="row">
+                            <dl class="row mb-0"> {# mb-0 қосылды #}
                                  <dt class="col-sm-4">{% trans "Аты" %}</dt>
                                  <dd class="col-sm-8">{{ profile_user.first_name|default:"-" }}</dd>
 
                                  <dt class="col-sm-4">{% trans "Тегі" %}</dt>
                                  <dd class="col-sm-8">{{ profile_user.last_name|default:"-" }}</dd>
 
-                                 {# Используем связанный userprofile #}
-                                 <dt class="col-sm-4">{% trans "Әкесінің аты" %}</dt>
-                                 <dd class="col-sm-8">{{ profile_user.userprofile.patronymic|default_if_none:"-" }}</dd>
+                                 {# UserProfile деректері (егер userprofile бар болса) #}
+                                 {% if userprofile %}
+                                     <dt class="col-sm-4">{% trans "Әкесінің аты" %}</dt>
+                                     <dd class="col-sm-8">{{ userprofile.patronymic|default_if_none:"-" }}</dd>
 
-                                 <dt class="col-sm-4">{% trans "Туған күні" %}</dt>
-                                 <dd class="col-sm-8">{{ profile_user.userprofile.date_of_birth|date:"d.m.Y"|default_if_none:"-" }}</dd>
+                                     <dt class="col-sm-4">{% trans "Туған күні" %}</dt>
+                                     <dd class="col-sm-8">{{ userprofile.date_of_birth|date:"d.m.Y"|default_if_none:"-" }}</dd>
 
-                                 <dt class="col-sm-4">{% trans "Жынысы" %}</dt>
-                                 <dd class="col-sm-8">{{ profile_user.userprofile.get_gender_display|default_if_none:"-" }}</dd>
+                                     <dt class="col-sm-4">{% trans "Жынысы" %}</dt>
+                                     <dd class="col-sm-8">{{ userprofile.get_gender_display|default_if_none:"-" }}</dd>
 
-                                 {% if profile_user.userprofile.grade %}
-                                     <dt class="col-sm-4">{% trans "Оқу сыныбы" %}</dt>
-                                     <dd class="col-sm-8">{{ profile_user.userprofile.grade.name|default:profile_user.userprofile.grade }}</dd> {# Если grade - FK #}
+                                     {# Сыныпты көрсету (егер оқушы болса және сыныбы бар болса) #}
+                                     {% if profile_user.role == 'student' and userprofile.grade %}
+                                         <dt class="col-sm-4">{% trans "Оқу сыныбы" %}</dt>
+                                         <dd class="col-sm-8">{{ userprofile.grade.name|default:userprofile.grade }}</dd>
+                                     {% endif %}
                                  {% endif %}
 
                                  <dt class="col-sm-4">{% trans "Username" %}</dt>
@@ -123,32 +132,26 @@
                                  <dt class="col-sm-4">{% trans "Email" %}</dt>
                                  <dd class="col-sm-8">{{ profile_user.email|default:"Көрсетілмеген" }}</dd>
 
-                                 {% with school=profile_user.userprofile.school|default:profile_user.school %}
-                                     {% if school %}
-                                         <dt class="col-sm-4">{% trans "Мектеп" %}</dt>
-                                         {# Предполагаем, что у школы есть поле name #}
-                                         <dd class="col-sm-8">{{ school.name|default:school }}</dd>
-                                     {% endif %}
-                                 {% endwith %}
+                                 {% if profile_user.school %}
+                                     <dt class="col-sm-4">{% trans "Мектеп" %}</dt>
+                                     <dd class="col-sm-8">{{ profile_user.school.name|default:"-" }}</dd>
+                                 {% endif %}
 
                             </dl>
 
-                            <div class="mt-4 text-end"> {# Кнопка редактирования перенесена сюда для логики #}
+                            <div class="mt-4 text-end">
                                 <a href="{% url 'profile_edit' %}" class="btn btn-primary">
                                     <i class="fas fa-edit me-1"></i> {% trans "Профильді өңдеу" %}
                                 </a>
                             </div>
-                        </div> {# end col-md-8 #}
-                    </div> {# end row in card-body #}
-                </div> {# end card-body #}
-            </div> {# end card #}
-
-        </div> {# end col #}
-    </div> {# end row #}
-{% endblock %} {# --- Конец блока dashboard_content --- #}
-
-{# --- Блок JS не нужен, если нет специфичного JS --- #}
-{% block extra_js %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
-{# --- УДАЛЕНО: Весь HTML ниже (navbar, footer, body, html) --- #}
+{% block extra_js %}
+{# Бұл бетте қосымша JS қажет емес #}
+{% endblock %}

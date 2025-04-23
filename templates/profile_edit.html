@@ -1,43 +1,31 @@
-{% extends 'dashboard_base.html' %} {# --- ИЗМЕНЕНО: Наследуемся от базы дашборда --- #}
+{% extends 'dashboard_base.html' %}
 {% load static i18n %}
 
-{# --- ИЗМЕНЕНО: Используем блок dashboard_title --- #}
 {% block dashboard_title %}{% trans "Профильді редакциялау" %} - SmartOqulyq{% endblock %}
 
-{# --- Дополнительные стили для этой страницы --- #}
 {% block extra_css %}
     <style>
-        .edit-profile-form .card + .card { /* Добавляем отступ сверху для второй и последующих карточек */
-             margin-top: 1.5rem;
-        }
+        .edit-profile-form .card + .card { margin-top: 1.5rem; }
+        /* Ағымдағы аватарды көрсету стилі */
         .current-avatar-display img {
-            max-height: 100px; /* Уменьшил размер для формы */
-            max-width: 100px;
-            border-radius: 50%;
-            margin-bottom: 10px;
-            border: 1px solid #dee2e6;
-            object-fit: cover;
+            max-height: 100px; /* Максималды биіктік */
+            max-width: 100px; /* Максималды ен */
+            border-radius: 50%; /* Дөңгелектеу */
+            margin-bottom: 10px; /* Астыңғы бос орын */
+            border: 1px solid #dee2e6; /* Жеңіл жиек */
+            object-fit: cover; /* Пропорцияны сақтау */
+            background-color: #f8f9fa; /* Фон түсі */
         }
-        /* Убрали стили body и main, так как они в dashboard_base.html */
-        .form-control-file { /* Базовые стили для input[type=file], если Bootstrap не стилизует */
-             display: block;
-             width: 100%;
-        }
-        /* Можно добавить стили для улучшения вида полей формы, если стандартные Bootstrap не устраивают */
-        .form-label {
-             font-weight: 500; /* Чуть жирнее метки */
-        }
+        .form-control-file { display: block; width: 100%; }
+        .form-label { font-weight: 500; }
     </style>
 {% endblock %}
 
-
-{# --- ИЗМЕНЕНО: Используем блок dashboard_content --- #}
 {% block dashboard_content %}
 <div class="row justify-content-center">
-    <div class="col-lg-9 col-md-11"> {# Центрированная колонка #}
+    <div class="col-lg-9 col-md-11">
         <h1 class="page-title mb-4">{% trans "Профильді редакциялау" %}</h1>
 
-        {# === Отображение сообщений Django === #}
         {% if messages %}
             {% for message in messages %}
                 <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
@@ -47,147 +35,107 @@
             {% endfor %}
         {% endif %}
 
-        {# === НАЧАЛО ФОРМЫ === #}
+        {# enctype="multipart/form-data" файл жүктеу үшін міндетті #}
         <form method="post" enctype="multipart/form-data" class="edit-profile-form needs-validation" novalidate>
             {% csrf_token %}
 
-            {# --- Карточка для UserEditForm (Имя, Фамилия, Email) --- #}
+            {# --- Негізгі деректер картасы (UserEditForm) --- #}
             <div class="card shadow-sm">
-                <div class="card-header">
-                     <h5 class="mb-0">{% trans "Негізгі деректер" %}</h5>
-                </div>
+                <div class="card-header py-3"> <h5 class="mb-0">{% trans "Негізгі деректер" %}</h5> </div>
                 <div class="card-body">
-                     {# Вывод полей user_form #}
+                     {# Форманың жалпы қателері #}
+                     {% if user_form.non_field_errors %}
+                         <div class="alert alert-danger">
+                             {% for error in user_form.non_field_errors %}{{ error }}{% endfor %}
+                         </div>
+                     {% endif %}
+                     {# Өрістерді циклмен шығару #}
                      {% for field in user_form %}
                         <div class="mb-3">
                             <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}</label>
-                            {{ field }} {# Django рендерит поле с нужными атрибутами и классами #}
-                            {% if field.help_text %}
-                                <small class="form-text text-muted d-block mt-1">{{ field.help_text|safe }}</small>
-                            {% endif %}
-                            {% if field.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in field.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                            {# Виджеттің класын дұрыстау (қажет болса) #}
+                            {{ field.as_widget }}
+                            {% if field.help_text %} <small class="form-text text-muted d-block mt-1">{{ field.help_text|safe }}</small> {% endif %}
+                            {% if field.errors %} <div class="invalid-feedback d-block"> {% for error in field.errors %}{{ error }}{% endfor %} </div> {% endif %}
                         </div>
                     {% endfor %}
                 </div>
             </div>
 
-            {# --- Карточка для UserProfileEditForm (Доп. данные и Аватар) --- #}
-            <div class="card shadow-sm mt-4"> {# Добавлен отступ сверху #}
-                <div class="card-header">
-                     <h5 class="mb-0">{% trans "Қосымша деректер" %}</h5>
-                </div>
+            {# --- Қосымша деректер картасы (UserProfileEditForm) --- #}
+            <div class="card shadow-sm mt-4">
+                <div class="card-header py-3"> <h5 class="mb-0">{% trans "Қосымша деректер" %}</h5> </div>
                 <div class="card-body">
-                    {# Вывод полей profile_form #}
+                     {# Форманың жалпы қателері #}
+                     {% if profile_form.non_field_errors %}
+                         <div class="alert alert-danger">
+                             {% for error in profile_form.non_field_errors %}{{ error }}{% endfor %}
+                         </div>
+                     {% endif %}
+                     {# Өрістерді циклмен шығару #}
                      {% for field in profile_form %}
-                         {# Особая обработка для поля аватара #}
+                         {# Аватар өрісін ерекшелеу #}
                          {% if field.name == 'avatar' %}
                              <div class="mb-3">
-                                <label class="form-label">{{ field.label }}</label>
-                                {# Отображение текущего аватара #}
-                                {% if userprofile.avatar and userprofile.avatar.url %}
-                                    <div class="mb-2 current-avatar-display">
-                                        <img src="{{ userprofile.avatar.url }}" alt="{% trans 'Ағымдағы аватар' %}">
-                                    </div>
-                                {% endif %}
-                                {# Поле загрузки файла #}
-                                {{ field }} {# Django отрендерит <input type="file"> #}
-                                {% if field.help_text %}
-                                    <small class="form-text text-muted d-block mt-1">{{ field.help_text|safe }}</small>
-                                {% endif %}
-                                {% if field.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in field.errors %}{{ error }}{% endfor %}
-                                    </div>
-                                {% endif %}
+                                <label class="form-label d-block fw-bold">{{ field.label }}</label>
+
+                                {# Ағымдағы аватарды көрсету #}
+                                <div class="mb-2 current-avatar-display">
+                                     {% with current_avatar=userprofile.avatar %}
+                                        {% if userprofile %} {# UserProfile бар ма? #}
+                                            {% if current_avatar and current_avatar.url and current_avatar.url != current_avatar.field.default %}
+                                                <img src="{{ current_avatar.url }}" alt="{% trans 'Ағымдағы аватар' %}" onerror="this.onerror=null; this.src='{% static 'image/default_avatar.png' %}';">
+                                            {% else %}
+                                                <img src="{% static 'image/default_avatar.png' %}" alt="{% trans 'Стандартты аватар' %}">
+                                                <small class="d-block text-muted">{% trans "Сурет жүктелмеген." %}</small>
+                                            {% endif %}
+                                        {% else %}
+                                             <img src="{% static 'image/default_avatar.png' %}" alt="{% trans 'Стандартты аватар' %}">
+                                             <small class="d-block text-muted">{% trans "Профиль деректері толық емес." %}</small>
+                                        {% endif %}
+                                    {% endwith %}
+                                </div>
+
+                                {# Жаңа файл жүктеу өрісі #}
+                                <label for="{{ field.id_for_label }}" class="form-label">{% trans "Өзгерту:" %}</label>
+                                {# field өзі ClearableFileInput виджетін көрсетеді #}
+                                {{ field }}
+                                {% if field.help_text %} <small class="form-text text-muted d-block mt-1">{{ field.help_text|safe }}</small> {% endif %}
+                                {% if field.errors %} <div class="invalid-feedback d-block"> {% for error in field.errors %}{{ error }}{% endfor %} </div> {% endif %}
                             </div>
-                         {% else %} {# Обработка остальных полей profile_form #}
+                         {% else %} {# Басқа өрістер #}
                              <div class="mb-3">
                                 <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}</label>
-                                {{ field }}
-                                {% if field.help_text %}
-                                    <small class="form-text text-muted d-block mt-1">{{ field.help_text|safe }}</small>
-                                {% endif %}
-                                {% if field.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in field.errors %}{{ error }}{% endfor %}
-                                    </div>
-                                {% endif %}
+                                {{ field.as_widget }}
+                                {% if field.help_text %} <small class="form-text text-muted d-block mt-1">{{ field.help_text|safe }}</small> {% endif %}
+                                {% if field.errors %} <div class="invalid-feedback d-block"> {% for error in field.errors %}{{ error }}{% endfor %} </div> {% endif %}
                             </div>
                          {% endif %}
                     {% endfor %}
                 </div>
             </div>
 
-            {# --- Кнопки управления формой --- #}
-            <div class="mt-4 d-flex justify-content-end"> {# Выравнивание кнопок вправо #}
-                {# Ссылка "Отмена" возвращает на страницу просмотра профиля #}
-                <a href="{% url 'dashboard_profile' %}" class="btn btn-secondary me-2">
-                    <i class="fas fa-times me-1"></i> {% trans "Болдырмау" %}
-                </a>
-                {# Кнопка "Сохранить" отправляет форму #}
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save me-1"></i> {% trans "Сақтау" %}
-                </button>
+            {# --- Басқару батырмалары --- #}
+            <div class="mt-4 d-flex justify-content-end">
+                <a href="{% url 'dashboard_profile' %}" class="btn btn-secondary me-2"> <i class="fas fa-times me-1"></i> {% trans "Болдырмау" %} </a>
+                <button type="submit" class="btn btn-primary"> <i class="fas fa-save me-1"></i> {% trans "Сақтау" %} </button>
             </div>
 
-        </form> {# Конец формы #}
-        {# === КОНЕЦ ФОРМЫ === #}
-
+        </form> {# Форманың соңы #}
     </div> {# end col #}
 </div> {# end row #}
 {% endblock %}
 
-
-{# --- Блок для дополнительного JavaScript --- #}
 {% block extra_js %}
-{# Оставляем ваш скрипт для аватара, если он нужен #}
+{# Bootstrap валидациясы үшін скрипт #}
 <script>
-    // Простой JS для логирования выбора файла (предпросмотр можно добавить позже)
-    try {
-        // Находим input для аватара по имени, так как id может генерироваться Django
-        const avatarInput = document.querySelector('input[type=file][name=avatar]');
-        if (avatarInput) {
-            avatarInput.addEventListener('change', function(event) {
-                const file = event.target.files[0];
-                if (file) {
-                    console.log("Жаңа файл таңдалды:", file.name);
-                    // TODO: Добавить код для FileReader и предпросмотра изображения, если требуется
-                    /* Пример:
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        // Найти img для предпросмотра и установить src
-                        // const previewImage = document.getElementById('avatar-preview'); // Нужен img с id="avatar-preview"
-                        // if (previewImage) previewImage.src = e.target.result;
-                    }
-                    reader.readAsDataURL(file);
-                    */
-                }
-            });
-        }
-    } catch (e) {
-        console.error("Error setting up avatar input listener:", e);
-    }
-
-    // Активация стандартной валидации Bootstrap (если используется novalidate)
     (function () {
-      'use strict'
-      var forms = document.querySelectorAll('.needs-validation')
-      Array.prototype.slice.call(forms)
-        .forEach(function (form) {
+      'use strict'; var forms = document.querySelectorAll('.needs-validation');
+      Array.prototype.slice.call(forms).forEach(function (form) {
           form.addEventListener('submit', function (event) {
-            if (!form.checkValidity()) {
-              event.preventDefault()
-              event.stopPropagation()
-            }
-            form.classList.add('was-validated')
-          }, false)
-        })
-    })()
+              if (!form.checkValidity()) { event.preventDefault(); event.stopPropagation(); }
+              form.classList.add('was-validated'); }, false);
+        });
+    })();
 </script>
 {% endblock %}
