@@ -1,72 +1,291 @@
-{% load static %}
-<html lang="ru">
+{% load static i18n widget_tweaks %}
+<html lang="kk">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Страница входа</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
-    <link href="{% static 'css/login.css' %}" rel="stylesheet"/> {# Укажи правильный путь к своему CSS #}
+    <title>{% trans "Кіру беті" %}</title>
+
+    {# Bootstrap 5 CSS (CDN) #}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    {# Font Awesome 5 (CDN) #}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet"/>
+
+    {# Қосымша стильдер #}
+    <style>
+        :root {
+            /* Түс айнымалылары */
+            --login-bg-light: #f0f2f5;
+            --login-container-bg-light: #ffffff;
+            --login-image-bg-light: #eef1f5; /* Сурет фоны */
+            --login-text-light: #1c1e21;
+            --login-text-secondary-light: #6c757d;
+            --login-border-light: #ced4da;
+            --login-input-bg-light: #ffffff;
+            --login-button-bg-light: #1877f2;
+            --login-button-hover-light: #166fe5;
+            --login-link-light: #1877f2;
+            --login-error-bg-light: #f8d7da;
+            --login-error-text-light: #842029;
+            --login-error-border-light: #f5c2c7;
+            --login-focus-border-light: #8ab4f8;
+            --login-focus-shadow-light: rgba(77, 150, 254, 0.25);
+
+            --login-bg-dark: #18191a;
+            --login-container-bg-dark: #242526;
+            --login-image-bg-dark: #3a3b3c; /* Сурет фоны */
+            --login-text-dark: #e4e6eb;
+            --login-text-secondary-dark: #b0b3b8;
+            --login-border-dark: #4b4c4e;
+            --login-input-bg-dark: #3a3b3c;
+            --login-button-bg-dark: #2374e1;
+            --login-button-hover-dark: #1f6ac4;
+            --login-link-dark: #4599ff;
+            --login-error-bg-dark: #5e2d32;
+            --login-error-text-dark: #ffbdc1;
+            --login-error-border-dark: #8f3a40;
+            --login-focus-border-dark: #4599ff;
+            --login-focus-shadow-dark: rgba(69, 153, 255, 0.3);
+        }
+
+        body {
+            background-color: var(--login-bg-light);
+            color: var(--login-text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+            position: relative;
+        }
+        /* Контейнер енді қайтадан flex болады */
+        .login-container {
+            display: flex;
+            background-color: var(--login-container-bg-light);
+            border-radius: 1rem;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 900px;
+            width: 90%;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            margin: 1rem; /* Ортаға туралау үшін */
+        }
+        /* Сурет бөлігінің стилі */
+        .image-section {
+            flex-basis: 55%;
+            background-color: var(--login-image-bg-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            transition: background-color 0.3s;
+        }
+        .image-section img.illustration { max-width: 100%; height: auto; }
+        /* Форма бөлігінің стилі */
+        .form-section {
+            flex-basis: 45%;
+            padding: 3rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background-color: var(--login-container-bg-light);
+            transition: background-color 0.3s;
+        }
+        .form-wrapper { width: 100%; text-align: center; }
+        .logo-container { margin-bottom: 1rem; }
+        .logo-image { max-height: 50px; width: auto; margin-bottom: 0.5rem; }
+        .form-title {
+            font-size: 1.75rem; font-weight: 600; margin-bottom: 2rem;
+            color: var(--login-text-light); transition: color 0.3s;
+        }
+        /* Input Group стильдері қажет емес */
+        .login-form .mb-3 {
+            margin-bottom: 1.25rem !important;
+        }
+        .login-form .form-control {
+            border: 1px solid var(--login-border-light);
+            background-color: var(--login-input-bg-light);
+            color: var(--login-text-light);
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            border-radius: 0.375rem; /* Толық дөңгелектеу */
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.15s ease-in-out;
+        }
+         .login-form .form-control:focus {
+            border-color: var(--login-focus-border-light);
+            box-shadow: 0 0 0 0.2rem var(--login-focus-shadow-light);
+            background-color: var(--login-input-bg-light);
+         }
+        .error-message {
+            color: var(--bs-danger);
+            font-size: 0.8rem; text-align: left; margin-top: 0.2rem; margin-bottom: 0.8rem;
+        }
+         .alert-danger.non-field-errors {
+             background-color: var(--login-error-bg-light); color: var(--login-error-text-light);
+             border-color: var(--login-error-border-light); padding: 0.75rem 1rem; font-size: 0.9rem;
+             transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+         }
+        .submit-button {
+            padding: 0.75rem 1.5rem; font-size: 1.05rem; font-weight: 600; width: 100%;
+            margin-top: 1rem; border-radius: 0.375rem; background-color: var(--login-button-bg-light);
+            border: none; color: #ffffff; transition: background-color 0.15s ease-in-out;
+        }
+        .submit-button:hover { background-color: var(--login-button-hover-light); color: #ffffff; }
+        .links-container { margin-top: 1.5rem; }
+        .forgot-password-link {
+            font-size: 0.85rem; color: var(--login-link-light);
+            text-decoration: none; transition: color 0.3s;
+        }
+        .copyright { margin-top: 2.5rem; font-size: 0.75rem; color: var(--login-text-secondary-light); transition: color 0.3s; }
+
+        #theme-toggle {
+            position: absolute; top: 1rem; right: 1rem; z-index: 10;
+            background: none; border: none; color: var(--login-text-secondary-light);
+            font-size: 1.25rem; cursor: pointer; padding: 0.5rem; border-radius: 50%;
+            transition: color 0.3s, background-color 0.3s;
+        }
+        #theme-toggle:hover { background-color: rgba(0, 0, 0, 0.1); }
+        #theme-toggle .fa-sun { display: none; }
+
+        /* --- ҚАРАҢҒЫ РЕЖИМ (`body.dark-mode` арқылы) --- */
+        body.dark-mode {
+            background-color: var(--login-bg-dark); color: var(--login-text-dark);
+        }
+        body.dark-mode .login-container {
+            background-color: var(--login-container-bg-dark); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+        }
+        body.dark-mode .image-section { background-color: var(--login-image-bg-dark); } /* Сурет фоны */
+        body.dark-mode .form-section { background-color: var(--login-container-bg-dark); } /* Форма фоны */
+        body.dark-mode .form-title { color: var(--login-text-dark); }
+        /* Иконка стильдері қажет емес */
+        body.dark-mode .login-form .form-control {
+            background-color: var(--login-input-bg-dark); border-color: var(--login-border-dark);
+            color: var(--login-text-dark);
+        }
+        body.dark-mode .login-form .form-control::placeholder { color: var(--login-text-secondary-dark); opacity: 0.7; }
+        body.dark-mode .login-form .form-control:focus {
+             border-color: var(--login-focus-border-dark); box-shadow: 0 0 0 0.2rem var(--login-focus-shadow-dark);
+             background-color: var(--login-input-bg-dark);
+        }
+        body.dark-mode .alert-danger.non-field-errors {
+             background-color: var(--login-error-bg-dark); color: var(--login-error-text-dark);
+             border-color: var(--login-error-border-dark);
+        }
+        body.dark-mode .error-message { color: #ff8a8a; }
+        body.dark-mode .submit-button { background-color: var(--login-button-bg-dark); }
+        body.dark-mode .submit-button:hover { background-color: var(--login-button-hover-dark); }
+        body.dark-mode .forgot-password-link { color: var(--login-link-dark); }
+        body.dark-mode .copyright { color: var(--login-text-secondary-dark); }
+        body.dark-mode #theme-toggle { color: var(--login-text-secondary-dark); }
+        body.dark-mode #theme-toggle:hover { background-color: rgba(255, 255, 255, 0.1); }
+        body.dark-mode #theme-toggle .fa-moon { display: none; }
+        body.dark-mode #theme-toggle .fa-sun { display: inline-block; }
+        /* --- --- */
+
+        /* Адаптивтілік */
+        @media (max-width: 768px) {
+            .login-container { flex-direction: column; width: 100%; max-width: 450px; margin: 2rem auto; }
+            .image-section { display: none; } /* Кіші экранда суретті жасыру */
+            .form-section { flex-basis: auto; padding: 2rem 1.5rem; }
+            #theme-toggle { top: 0.5rem; right: 0.5rem; }
+        }
+    </style>
 </head>
 <body>
-    <div class="page-container">
-        <div class="image-section">
-            <img
-                alt="3D иллюстрация человека в костюме с ноутбуком"
-                class="illustration"
-                src="{% static 'image/баука.jpg' %}"
-            />
-        </div>
 
+    <button id="theme-toggle" aria-label="{% trans 'Теманы ауыстыру' %}">
+        <i class="fas fa-moon"></i>
+        <i class="fas fa-sun"></i>
+    </button>
+
+    <div class="login-container">
+        {# --- СУРЕТ БЛОГЫ ҚАЙТАРЫЛДЫ --- #}
+        <div class="image-section d-none d-md-flex"> {# Кіші экранда жасыру #}
+            <img alt="Иллюстрация" class="illustration" src="{% static 'image/баука.jpg' %}" />
+        </div>
+        {# --- --- #}
+
+        {# --- ФОРМА БӨЛІГІ ҚАЙТАРЫЛДЫ --- #}
         <div class="form-section">
             <div class="form-wrapper">
                 <div class="logo-container">
-                    <img
-                        alt="Логотип SmartOqulyq"
-                        class="logo-image"
-                        src="{% static 'image/image.png' %}"
-                    />
+                    <img alt="SmartOqulyq Логотипі" class="logo-image" src="{% static 'image/image.png' %}" />
                 </div>
-                <h1 class="form-title">Kipy</h1>
+                <h1 class="form-title">{% trans "Жүйеге кіру" %}</h1>
+
+               {% if form.non_field_errors %}
+                 <div class="alert alert-danger non-field-errors">
+                      {% for error in form.non_field_errors %} <p class="mb-0 small">{{ error }}</p> {% endfor %}
+                 </div>
+               {% endif %}
 
                <form method="post" action="{% url 'login' %}" class="login-form">
                  {% csrf_token %}
 
-                 <div class="form-field">
-                     {{ form.username }}
-                     {% if form.username.errors %}
-                         <p class="error-message">{{ form.username.errors|striptags }}</p>
-                     {% endif %}
+                 {# Логин өрісі (ИКОНКАСЫЗ) #}
+                 <div class="mb-3">
+                     {% render_field form.username class+="form-control" placeholder="Пайдаланушы аты" aria-label="Пайдаланушы аты" %}
                  </div>
+                 {% if form.username.errors %} <p class="error-message">{{ form.username.errors|striptags }}</p> {% endif %}
 
-                 <div class="form-field">
-                     {{ form.password }}
-                      {% if form.password.errors %}
-                         <p class="error-message">{{ form.password.errors|striptags }}</p>
-                     {% endif %}
+                 {# Құпия сөз өрісі (ИКОНКАСЫЗ) #}
+                 <div class="mb-3">
+                     {% render_field form.password class+="form-control" placeholder="Құпия сөз" aria-label="Құпия сөз" %}
                  </div>
+                 {% if form.password.errors %} <p class="error-message">{{ form.password.errors|striptags }}</p> {% endif %}
 
-                 {% if form.non_field_errors %}
-                     <div class="non-field-errors">
-                         {{ form.non_field_errors|striptags }}
-                     </div>
-                 {% endif %}
-
-                 <button class="submit-button" type="submit">
-                    Кіру
-                 </button>
+                 <button class="btn btn-primary submit-button" type="submit">{% trans "Кіру" %}</button>
                </form>
 
                 <div class="links-container">
-                     <a class="forgot-password-link" href="{% url 'password_reset' %}">
-                        Купия сөзді ұмыттыңыз ба?
-                     </a>
+                     <a class="forgot-password-link" href="{% url 'password_reset' %}">{% trans "Құпия сөзді ұмыттыңыз ба?" %}</a>
                 </div>
 
                 <div class="copyright">
-                    Авторлык кукык © 2025 SmartOqulyq
+                    {% blocktrans trimmed %}Авторлық құқық © {{ "now"|date:"Y" }} SmartOqulyq{% endblocktrans %}
                 </div>
             </div>
         </div>
-    </div>
+        {# --- --- #}
+    </div> {# login-container div-і жабылды #}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    {# --- ТЕМА АУЫСТЫРҒЫШ JAVASCRIPT (өзгеріссіз) --- #}
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        const currentTheme = localStorage.getItem('theme');
+
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        if (currentTheme) {
+            setTheme(currentTheme);
+        } else {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            setTheme(prefersDark ? 'dark' : 'light');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            setTheme(body.classList.contains('dark-mode') ? 'light' : 'dark');
+        });
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+             if (!localStorage.getItem('theme')) {
+                  setTheme(event.matches ? 'dark' : 'light');
+             }
+         });
+    </script>
+
 </body>
 </html>

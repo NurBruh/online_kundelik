@@ -139,7 +139,6 @@
                             <span class="me-2 d-none d-lg-inline text-gray-600 small">{{ user.get_full_name|default:user.username }}</span>
 
                             {# --- ХИДЕРДЕГІ АВАТАРДЫ КӨРСЕТУ (ТҮЗЕТІЛГЕН ШАРТ) --- #}
-                            {# hasattr орнына тікелей тексеру #}
                             {% if user.userprofile and user.userprofile.avatar and user.userprofile.avatar.url != user.userprofile.avatar.field.default %}
                                 <img class="img-profile rounded-circle"
                                      src="{{ user.userprofile.avatar.url }}"
@@ -182,58 +181,87 @@
             <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
                 <div class="sidebar-sticky d-flex flex-column h-100">
                     <ul class="nav nav-pills flex-column">
-                        {# --- Сайдбар мәзірі (рөлге байланысты көрсету) --- #}
+                        {# --- Негізгі мәзір --- #}
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_schedule' %}active{% endif %}" href="{% url 'dashboard_schedule' %}">
+                            <a class="nav-link {% if current_view == 'schedule' %}active{% endif %}" href="{% url 'dashboard_schedule' %}">
                                 <i class="fas fa-calendar-alt fa-fw"></i> {% trans "Менің кестем" %}
                             </a>
                         </li>
                         {% if request.user.role == 'student' or request.user.role == 'parent' %}
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_grades' %}active{% endif %}" href="{% url 'dashboard_grades' %}">
+                            <a class="nav-link {% if current_view == 'grades' %}active{% endif %}" href="{% url 'dashboard_grades' %}">
                                 <i class="fas fa-book-open fa-fw"></i> {% trans "Күнделік / Бағалар" %}
                             </a>
                         </li>
+                        {# --- ОҚУШЫҒА АРНАЛҒАН БЖБ/ТЖБ СІЛТЕМЕСІ --- #}
+                        <li class="nav-item">
+                            <a class="nav-link {% if current_view == 'list_assigned_assessments' or current_view == 'take_assessment' or current_view == 'view_submission_result' %}active{% endif %}" href="{% url 'list_assigned_assessments' %}">
+                                <i class="fas fa-tasks fa-fw"></i> {% trans "Менің БЖБ/ТЖБ-ларым" %}
+                            </a>
+                        </li>
                         {% endif %}
+
+                        {# --- Мәліметтер енгізу бөлімі --- #}
                         {% if request.user.role in 'teacher,admin,director' or request.user.is_superuser %}
                             <li class="nav-item mt-3"><span class="nav-link disabled text-white-50 px-3"><small>{% trans "МӘЛІМЕТТЕР ЕНГІЗУ" %}</small></span></li>
+
+                            {# --- БАҒА ҚОЮ --- #}
                             {% if request.user.role == 'teacher' %}
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'add_daily_grade' %}active{% endif %}" href="{% url 'add_daily_grade' %}">
+                                    <a class="nav-link {% if current_view == 'add_daily_grade' %}active{% endif %}" href="{% url 'add_daily_grade' %}">
                                         <i class="fas fa-star fa-fw"></i> {% trans "Күнделікті баға" %}
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'add_exam_grade' %}active{% endif %}" href="{% url 'add_exam_grade' %}">
+                                    <a class="nav-link {% if current_view == 'add_exam_grade' %}active{% endif %}" href="{% url 'add_exam_grade' %}">
                                         <i class="fas fa-file-signature fa-fw"></i> {% trans "БЖБ/ТЖБ бағасы" %}
                                     </a>
                                 </li>
                             {% endif %}
+
+                            {# --- БЖБ/ТЖБ БАСҚАРУ --- #}
+                            {% if request.user.role == 'teacher' or request.user.is_superuser %}
+                                <li class="nav-item">
+                                    <a class="nav-link {% if current_view == 'create_assessment' %}active{% endif %}" href="{% url 'create_assessment' %}">
+                                        <i class="fas fa-file-alt fa-fw"></i> {% trans "Жаңа БЖБ/ТЖБ құру" %}
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% if request.user.role == 'teacher' %}
+                                <li class="nav-item">
+                                    <a class="nav-link {% if current_view == 'list_assessments' or current_view == 'edit_assessment' or current_view == 'view_submissions' or current_view == 'grade_submission' %}active{% endif %}" href="{% url 'list_assessments' %}">
+                                        <i class="fas fa-list-alt fa-fw"></i> {% trans "Менің БЖБ/ТЖБ тізімім" %}
+                                    </a>
+                                </li>
+                            {% endif %}
+                             {# --- БЖБ/ТЖБ СОҢЫ --- #}
+
+                            {# --- АДМИН/ДИРЕКТОР ФУНКЦИЯЛАРЫ --- #}
                             {% if request.user.role in 'admin,director' or request.user.is_superuser %}
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'add_schedule' %}active{% endif %}" href="{% url 'add_schedule' %}">
+                                    <a class="nav-link {% if current_view == 'add_schedule' %}active{% endif %}" href="{% url 'add_schedule' %}">
                                         <i class="fas fa-calendar-plus fa-fw"></i> {% trans "Кестеге қосу" %}
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'add_person' %}active{% endif %}" href="{% url 'add_person' %}">
+                                    <a class="nav-link {% if current_view == 'add_person' %}active{% endif %}" href="{% url 'add_person' %}">
                                         <i class="fas fa-user-plus fa-fw"></i> {% trans "Пайдаланушы қосу" %}
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'add_class' %}active{% endif %}" href="{% url 'add_class' %}">
+                                    <a class="nav-link {% if current_view == 'add_class' %}active{% endif %}" href="{% url 'add_class' %}">
                                         <i class="fas fa-users fa-fw"></i> {% trans "Сынып қосу" %}
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'add_subject' %}active{% endif %}" href="{% url 'add_subject' %}">
+                                    <a class="nav-link {% if current_view == 'add_subject' %}active{% endif %}" href="{% url 'add_subject' %}">
                                         <i class="fas fa-book fa-fw"></i> {% trans "Пән қосу" %}
                                     </a>
                                 </li>
                             {% endif %}
                              {% if request.user.is_superuser %}
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.resolver_match.url_name == 'add_school' %}active{% endif %}" href="{% url 'add_school' %}">
+                                    <a class="nav-link {% if current_view == 'add_school' %}active{% endif %}" href="{% url 'add_school' %}">
                                         <i class="fas fa-school fa-fw"></i> {% trans "Мектеп қосу" %}
                                     </a>
                                 </li>
@@ -246,9 +274,10 @@
                         {% endif %}
 
                     </ul>
+                     {# Төменгі жақтағы профиль және шығу #}
                      <ul class="nav nav-pills flex-column mt-auto">
                         <li class="nav-item border-top my-3 pt-3">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_profile' or request.resolver_match.url_name == 'profile_edit' %}active{% endif %}" href="{% url 'dashboard_profile' %}">
+                            <a class="nav-link {% if current_view == 'profile' or current_view == 'profile_edit' %}active{% endif %}" href="{% url 'dashboard_profile' %}">
                                 <i class="fas fa-user-cog fa-fw"></i> {% trans "Профиль" %}
                             </a>
                         </li>
@@ -273,7 +302,7 @@
             <main class="col-md-9 ms-md-auto col-lg-10 px-md-4 d-flex flex-column">
                 {# --- Flash Messages --- #}
                 {% if messages %}
-                 <div class="container-fluid mt-3 px-0"> {# Контейнер қосылды #}
+                 <div class="container-fluid mt-3 px-0">
                     {% for message in messages %}
                         <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
                             {{ message }}
@@ -311,11 +340,19 @@
                                  </ul>
                              </div>
                              <div class="col-6 col-md-2">
+                                 <h5>{% trans "Ресурстар" %}</h5>
+                                 <ul class="list-unstyled">
+                                     <li class="mb-1"><a href="#">{% trans "Қолдау" %}</a></li>
+                                     <li class="mb-1"><a href="{% url 'about_us'|default:'#' %}">{% trans "Біз туралы" %}</a></li>
+                                     <li class="mb-1"><a href="#">{% trans "Құпиялылық" %}</a></li>
+                                 </ul>
+                             </div>
+                             <div class="col-6 col-md-2">
                                  <h5>{% trans "Байланыс" %}</h5>
                                  <ul class="list-unstyled">
                                      <li class="mb-1"><a href="https://www.instagram.com/senjumarru/"><i class="fab fa-instagram me-1"></i> Instagram</a></li>
-                                     <li class="mb-1"><a href="https://vk.com/shayakhmetov_31hz"><i class="fab fa-telegram-plane me-1"></i> Вконтакте</a></li>
-                                     <li class="mb-1"><a href="@aliexxprs"><i class="fab fa-whatsapp me-1"></i> Telegram</a></li>
+                                     <li class="mb-1"><a href="https://vk.com/shayakhmetov_31hz"><i class="fab fa-vk me-1"></i> Вконтакте</a></li>
+                                     <li class="mb-1"><a href="https://t.me/aliexxprs"><i class="fab fa-telegram-plane me-1"></i> Telegram</a></li>
                                  </ul>
                              </div>
                          </div>
@@ -341,6 +378,19 @@
                 });
             }
         } catch (e) { console.error("Sidebar backdrop listener error:", e); }
+
+        // Скрипт для выделения активного пункта меню (необязательно, если использовать active класс как в коде)
+        // document.addEventListener("DOMContentLoaded", function() {
+        //     const currentPath = window.location.pathname;
+        //     const sidebarLinks = document.querySelectorAll('#sidebarMenu .nav-link');
+        //     sidebarLinks.forEach(link => {
+        //         if (link.getAttribute('href') === currentPath) {
+        //             link.classList.add('active');
+        //         } else {
+        //             link.classList.remove('active');
+        //         }
+        //     });
+        // });
     </script>
     {% endblock %}
 </body>

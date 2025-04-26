@@ -1,0 +1,80 @@
+--- START OF FILE assessment_list.html ---
+
+{% extends 'dashboard_base.html' %}
+{% load static i18n %}
+
+{% block dashboard_title %}{% trans "Менің БЖБ/ТЖБ тізімім" %}{% endblock %}
+
+{% block dashboard_content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">{% trans "Менің БЖБ/ТЖБ тізімім" %}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'create_assessment' %}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus me-1"></i> {% trans "Жаңа БЖБ/ТЖБ құру" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            {% if assessments %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">{% trans "Атауы" %}</th>
+                                <th scope="col">{% trans "Пән" %}</th>
+                                <th scope="col">{% trans "Сынып" %}</th>
+                                <th scope="col">{% trans "Тоқсан" %}</th>
+                                <th scope="col">{% trans "Түрі" %}</th>
+                                <th scope="col" class="text-center">{% trans "Статус" %}</th>
+                                <th scope="col">{% trans "Құрылған күні" %}</th>
+                                <th scope="col" class="text-center">{% trans "Сұрақ саны" %}</th>
+                                <th scope="col">{% trans "Әрекеттер" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assessment in assessments %}
+                            <tr>
+                                <td class="fw-medium">
+                                    {# Ссылка на редактирование БЖБ/ТЖБ #}
+                                    <a href="{% url 'edit_assessment' pk=assessment.pk %}">{{ assessment.title }}</a>
+                                </td>
+                                <td>{{ assessment.subject.name|default:"-" }}</td>
+                                <td>{{ assessment.school_class.name|default:"-" }}</td>
+                                <td>{{ assessment.term }}</td>
+                                <td>{{ assessment.get_exam_type_display }}</td>
+                                <td class="text-center">
+                                    {% if assessment.is_active %}
+                                        <span class="badge bg-success">{% trans "Белсенді" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{% trans "Жасырын" %}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ assessment.created_at|date:"d.m.Y H:i" }}</td>
+                                <td class="text-center">{{ assessment.questions.count }}</td>
+                                <td>
+                                    {# Кнопка редактирования #}
+                                    <a href="{% url 'edit_assessment' pk=assessment.pk %}" class="btn btn-sm btn-outline-primary me-1" title="{% trans 'Өңдеу' %}">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {# Ссылка на просмотр отправленных работ (можно добавить позже) #}
+                                    {# Используем assessment.id или assessment.pk #}
+                                    <a href="{% url 'view_submissions' assessment_id=assessment.pk %}" class="btn btn-sm btn-outline-info" title="{% trans 'Тапсыруларды көру' %}"><i class="fas fa-eye"></i></a>
+                                     {# Кнопка удаления (если нужна, с доп. логикой) #}
+                                    {# <a href="#" class="btn btn-sm btn-outline-danger" title="{% trans 'Жою' %}"><i class="fas fa-trash"></i></a> #}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-light text-center m-4">
+                    {% trans "Сіз әлі БЖБ/ТЖБ құрмадыңыз." %} <a href="{% url 'create_assessment' %}">{% trans "Жаңасын құру" %}</a>.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+--- END OF FILE assessment_list.html ---

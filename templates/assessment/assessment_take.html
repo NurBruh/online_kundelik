@@ -1,0 +1,208 @@
+{% extends 'dashboard_base.html' %}
+{% load static i18n widget_tweaks %} {# widget_tweaks әлі де OPEN сұрақтары үшін керек #}
+
+{% block dashboard_title %}{% blocktrans with title=assessment.title %}БЖБ/ТЖБ өту: {{ title }}{% endblocktrans %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .assessment-question {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 1.5rem; /* Сұрақ астындағы бос орын */
+        margin-bottom: 1.5rem; /* Сұрақтар арасындағы бос орын */
+    }
+    .assessment-question:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+    .question-text {
+        font-weight: 500; /* Сұрақ мәтінін қалыңдау ету */
+        margin-bottom: 1rem; /* Сұрақ пен жауаптар арасындағы бос орын */
+        font-size: 1.1rem; /* Сұрақ мәтінін сәл үлкейту (қажетінше) */
+        line-height: 1.6; /* Жол арасын реттеу */
+    }
+    .question-text img { /* Сұрақ ішіндегі суреттердің максималды енін шектеу */
+        max-width: 100%;
+        height: auto;
+        margin-top: 0.5rem; /* Суреттің үстінде сәл бос орын */
+    }
+    .choice-label {
+        margin-left: 0.5rem;
+        font-weight: normal; /* Жауап нұсқасының мәтіні */
+        cursor: pointer; /* Label-ды басуға болатынын көрсету */
+    }
+    .form-check {
+        margin-bottom: 0.75rem; /* Жауап нұсқалары арасындағы бос орынды сәл үлкейту */
+        display: flex; /* Радио/Чекбокс пен мәтінді тігінен туралау */
+        align-items: center;
+    }
+    .form-check-input { /* Класс формада қосылғандықтан, стильді осы жерде де реттеуге болады */
+         margin-top: 0; /* display: flex қолданғанда, бұл қажет болмауы мүмкін */
+         float: none; /* Bootstrap әдетте float қосады, оны алып тастау */
+         margin-right: 0.5rem; /* Текстпен арасын ашу */
+    }
+    .field-errors {
+        color: var(--bs-danger);
+        font-size: 0.875em; /* Қате туралы хабарламаның өлшемі */
+        margin-top: 0.25rem;
+        display: block; /* Қате әрдайым жаңа жолдан басталсын */
+    }
+    .file-upload-help,
+    .form-text.text-muted { /* Көмекші мәтіндер үшін стиль */
+        margin-top: 0.25rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.875em;
+        color: #6c757d;
+        display: block; /* Көмекші мәтін жаңа жолдан басталсын */
+    }
+    .form-label.small {
+        font-weight: 500; /* Ашық сұрақтардың label-дарын сәл қалыңдату */
+        margin-bottom: 0.25rem; /* Label мен input арасын азайту */
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">{% blocktrans with title=assessment.title %}БЖБ/ТЖБ өту: {{ title }}{% endblocktrans %}</h1>
+        <div>
+             <a href="{% url 'list_assigned_assessments' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> {% trans "Тізімге оралу" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+             <div class="d-flex justify-content-between align-items-center">
+                 <h5 class="mb-0">{{ assessment.subject.name }} - {{ assessment.get_exam_type_display }}</h5>
+                 <span class="text-muted small">{% trans "Макс балл" %}: {{ assessment.max_score|default:"N/A" }}</span> {# Егер балл жоқ болса N/A көрсету #}
+            </div>
+             {% if assessment.instructions %}
+                 <p class="card-text text-muted small mt-2 mb-0">{{ assessment.instructions|safe|linebreaksbr }}</p> {# Нұсқаулықта HTML болса, safe қолдану #}
+             {% endif %}
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data"> {# Файл жүктеу үшін enctype міндетті #}
+                {% csrf_token %}
+
+                {# Жалпы форма қателері #}
+                {% if form and form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            <p class="mb-0">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {# Итерация арқылы сұрақтарды шығару #}
+                {% for item in questions_with_fields %}
+                    <div class="assessment-question" id="question-{{ item.question.pk }}">
+                        {# Сұрақ мәтіні және баллы #}
+                        <div class="question-text">
+                            <span class="me-2">{{ item.question.order }}.</span> {# Нөмірді бөлектеу #}
+                            {{ item.question.text|safe }} {# CKEditor немесе басқа HTML редактордан келсе #}
+                            {% if item.question.points %}
+                                <span class="text-muted small ms-1">({% blocktrans count counter=item.question.points %}{{ counter }} балл{% plural %}{{ counter }} балл{% endblocktrans %})</span>
+                            {% endif %}
+                        </div>
+
+                        {# Жауап беру өрістері #}
+                        {% if item.question.question_type in 'MCQ,TF' %}
+                            {% with field=item.fields.choice %}
+                                {% if field %}
+                                    {# Өріс қателері #}
+                                    {% if field.errors %} <div class="field-errors mb-2"> {% for error in field.errors %}{{ error }}{% endfor %} </div> {% endif %}
+                                    {# Таңдау нұсқалары #}
+                                    {% for choice in field %}
+                                        <div class="form-check">
+                                            {{ choice.tag }} {# Виджет атрибуты формада қосылған #}
+                                            <label for="{{ choice.id_for_label }}" class="form-check-label choice-label">{{ choice.choice_label }}</label>
+                                        </div>
+                                    {% empty %}
+                                         <p class="text-warning small">{% trans "Бұл сұраққа жауап нұсқалары табылмады." %}</p>
+                                    {% endfor %}
+                                    {# Көмекші мәтін #}
+                                    {% if field.help_text %} <small class="form-text text-muted mt-2">{{ field.help_text }}</small>{% endif %}
+                                {% else %}
+                                    <p class="text-danger small">{% trans "Формада бұл сұрақтың өрісі табылмады (choice)." %}</p>
+                                {% endif %}
+                            {% endwith %}
+
+                        {% elif item.question.question_type == 'MAQ' %}
+                             {% with field=item.fields.choices %}
+                                {% if field %}
+                                    {# Өріс қателері #}
+                                    {% if field.errors %} <div class="field-errors mb-2"> {% for error in field.errors %}{{ error }}{% endfor %} </div> {% endif %}
+                                    {# Таңдау нұсқалары #}
+                                     {% for choice in field %}
+                                        <div class="form-check">
+                                            {{ choice.tag }} {# Виджет атрибуты формада қосылған #}
+                                            <label for="{{ choice.id_for_label }}" class="form-check-label choice-label">{{ choice.choice_label }}</label>
+                                        </div>
+                                     {% empty %}
+                                         <p class="text-warning small">{% trans "Бұл сұраққа жауап нұсқалары табылмады." %}</p>
+                                     {% endfor %}
+                                    {# Көмекші мәтін #}
+                                    {% if field.help_text %} <small class="form-text text-muted mt-2">{{ field.help_text }}</small>{% endif %}
+                                {% else %}
+                                     <p class="text-danger small">{% trans "Формада бұл сұрақтың өрісі табылмады (choices)." %}</p>
+                                {% endif %}
+                             {% endwith %}
+
+                        {% elif item.question.question_type == 'OPEN' %}
+                             {% with text_field=item.fields.text file_field=item.fields.file %}
+                                 {# Мәтіндік жауап өрісі #}
+                                 {% if text_field %}
+                                     <div class="mb-2"> {# Файл өрісі болса, арасын аздап ашу үшін mb-2 #}
+                                         {# render_field қолданғанда label өрістен автоматты түрде алынуы мүмкін, бірақ қалауыңызша көрсетуге болады #}
+                                         {# <label for="{{ text_field.id_for_label }}" class="form-label small">{% trans "Мәтіндік жауап:" %}</label> #}
+                                         {% render_field text_field class+="form-control form-control-sm" rows="4" placeholder="Жауабыңызды осында жазыңыз..." %}
+                                         {% if text_field.errors %} <div class="field-errors mt-1"> {% for error in text_field.errors %}{{ error }}{% endfor %} </div> {% endif %}
+                                         {% if text_field.help_text and not file_field %} <small class="form-text text-muted">{{ text_field.help_text }}</small>{% endif %} {# Егер тек мәтін болса, көмекші мәтінді көрсету #}
+                                     </div>
+                                 {% endif %}
+                                 {# Файл тіркеу өрісі #}
+                                 {% if file_field %}
+                                     <div class="mb-2">
+                                         {# <label for="{{ file_field.id_for_label }}" class="form-label small mt-2">{% trans "Немесе файл тіркеңіз:" %}</label> #}
+                                         {% render_field file_field class+="form-control form-control-sm" %}
+                                         {% if file_field.help_text %} <small class="form-text text-muted file-upload-help">{{ file_field.help_text|safe }}</small> {% endif %}
+                                         {% if file_field.errors %} <div class="field-errors mt-1"> {% for error in file_field.errors %}{{ error }}{% endfor %} </div> {% endif %}
+                                     </div>
+                                 {% endif %}
+                                 {# Тек бір көмекші мәтінді (балл) көрсету, егер екі өріс те болса #}
+                                 {% if text_field and file_field and text_field.help_text %}
+                                      <small class="form-text text-muted mb-2">{{ text_field.help_text }}</small>
+                                 {% endif %}
+                                 {# Егер өрістер табылмаса #}
+                                 {% if not text_field and not file_field %}
+                                     <p class="text-danger small">{% trans "Формада бұл сұрақтың өрістері табылмады (text/file)." %}</p>
+                                 {% endif %}
+                             {% endwith %}
+
+                         {% else %}
+                              {# Белгісіз сұрақ типі #}
+                              <p class="text-warning small">{% blocktrans with q_type=item.question.question_type %}Сұрақ типі белгісіз ({{ q_type }}) немесе өріс табылмады.{% endblocktrans %}</p>
+                         {% endif %}
+                    </div>
+                {% empty %}
+                    {# Сұрақ жоқ болса #}
+                    <p class="text-center text-muted">{% trans "Бұл БЖБ/ТЖБ-да сұрақтар әлі қосылмаған." %}</p>
+                {% endfor %}
+
+                {# Жіберу батырмасы #}
+                {% if questions_with_fields %} {# Егер сұрақтар болса ғана батырманы көрсету #}
+                <hr class="my-4">
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                       <i class="fas fa-check-circle me-2"></i> {% trans "Жауапты жіберу" %}
+                    </button>
+                </div>
+                {% endif %}
+
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

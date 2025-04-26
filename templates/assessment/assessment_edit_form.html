@@ -1,0 +1,396 @@
+{% extends 'dashboard_base.html' %}
+{% load static i18n widget_tweaks %}
+
+{% block dashboard_title %}{% blocktrans with title=assessment.title %}БЖБ/ТЖБ өңдеу: {{ title }}{% endblocktrans %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .question-form { border: 1px solid #e3e6f0; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 0.375rem; background-color: #f8f9fc; position: relative; }
+    .question-form legend { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e3e6f0; }
+    .delete-question-btn { position: absolute; top: 0.5rem; right: 0.5rem; }
+    .choice-formset-container { margin-top: 1rem; padding-left: 1.5rem; border-left: 3px solid #cfe2ff; padding-top: 1rem; }
+    /* Жаңа сұрақтар үшін нұсқалар блогын бастапқыда жасыру */
+    .choice-formset-container.initially-hidden { display: none; }
+    .choice-formset .row { margin-bottom: 0.5rem; }
+    .choice-formset label { font-size: 0.85rem; }
+    .add-choice-btn { font-size: 0.8rem; padding: 0.2rem 0.5rem; } /* save-choices-btn алынып тасталды */
+    .choice-delete label { font-size: 0.8rem; color: #dc3545; }
+    .form-check-label-active { margin-left: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+         <h1 class="h2">{% blocktrans with title=assessment.title %}БЖБ/ТЖБ өңдеу: {{ title }}{% endblocktrans %}</h1>
+        <div>
+            <a href="{% url 'list_assessments' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> {% trans "Тізімге оралу" %}
+            </a>
+        </div>
+    </div>
+
+    {# НЕГІЗГІ ФОРМА (Assessment + Questions + Choices) #}
+    <form method="post" id="main-assessment-form">
+        {% csrf_token %}
+
+        {# Негізгі бағалау формасы (өзгеріссіз) #}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3"><h5 class="mb-0">{% trans "Негізгі ақпарат" %}</h5></div>
+            <div class="card-body">
+                {% if assessment_form.non_field_errors %}<div class="alert alert-danger">{% for error in assessment_form.non_field_errors %}{{ error }}{% endfor %}</div>{% endif %}
+                <div class="row">
+                    {% for field in assessment_form %}
+                        <div class="{% if field.name == 'is_active' %}col-12 mb-3{% else %}col-md-6 mb-3{% endif %}">
+                            {% if field.name == 'is_active' %}
+                               <div class="form-check mt-2">
+                                    {% render_field field class+="form-check-input" %}
+                                    <label for="{{ field.id_for_label }}" class="form-check-label form-check-label-active">{{ field.label }}</label>
+                                    {% if field.errors %} <div class="invalid-feedback d-block">{{ field.errors|striptags }}</div> {% endif %}
+                                    {% if field.help_text %} <small class="form-text text-muted">{{ field.help_text|safe }}</small> {% endif %}
+                               </div>
+                           {% else %}
+                               <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}{% if field.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                               {% render_field field class+="form-control" %}
+                               {% if field.errors %} <div class="invalid-feedback d-block">{{ field.errors|striptags }}</div> {% endif %}
+                               {% if field.help_text %} <small class="form-text text-muted">{{ field.help_text|safe }}</small> {% endif %}
+                           {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {# Сұрақтар формсеті #}
+        <div class="card shadow-sm mb-4">
+             <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{% trans "Сұрақтар" %}</h5>
+                <button type="button" id="add-question-btn" class="btn btn-sm btn-success">{% trans "+ Сұрақ қосу" %}</button>
+            </div>
+            <div class="card-body">
+                {{ question_formset.management_form }} {# Сұрақтардың management form-ы #}
+                {% if question_formset.non_form_errors %}<div class="alert alert-danger">{% for error in question_formset.non_form_errors %}{{ error }}{% endfor %}</div>{% endif %}
+
+                <div id="question-forms-container">
+                    {# Бұрыннан бар сұрақтарды көрсету циклы #}
+                    {% for q_form in question_formset %}
+                        <fieldset class="question-form" id="question-{{ q_form.prefix }}">
+                            <legend>{% trans "Сұрақ" %} #{{ forloop.counter }}</legend>
+                            {% if q_form.non_field_errors %}<div class="alert alert-danger">{% for error in q_form.non_field_errors %}{{ error }}{% endfor %}</div>{% endif %}
+                            {% if q_form.instance.pk %}{{ q_form.id }}{% endif %}
+
+                            {# Сұрақ формасының негізгі өрістері (өзгеріссіз) #}
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label for="{{ q_form.text.id_for_label }}" class="form-label">{{ q_form.text.label }}<span class="text-danger">*</span></label>
+                                    {% render_field q_form.text %}
+                                    {% if q_form.text.errors %} <div class="invalid-feedback d-block">{{ q_form.text.errors|striptags }}</div> {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ q_form.question_type.id_for_label }}" class="form-label">{{ q_form.question_type.label }}<span class="text-danger">*</span></label>
+                                    {% render_field q_form.question_type class+="form-select form-select-sm question-type-selector" %}
+                                    {% if q_form.question_type.errors %} <div class="invalid-feedback d-block">{{ q_form.question_type.errors|striptags }}</div> {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                     <label for="{{ q_form.points.id_for_label }}" class="form-label">{{ q_form.points.label }}<span class="text-danger">*</span></label>
+                                     {% render_field q_form.points class+="form-control form-control-sm" %}
+                                     {% if q_form.points.errors %} <div class="invalid-feedback d-block">{{ q_form.points.errors|striptags }}</div> {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                     <label for="{{ q_form.order.id_for_label }}" class="form-label">{{ q_form.order.label }}<span class="text-danger">*</span></label>
+                                     {% render_field q_form.order class+="form-control form-control-sm" %}
+                                     {% if q_form.order.errors %} <div class="invalid-feedback d-block">{{ q_form.order.errors|striptags }}</div> {% endif %}
+                                </div>
+                            </div>
+
+                            {# --- Нұсқалар формсеті (бұрыннан бар сұрақтар үшін) --- #}
+                            {# Ішкі <form> алынып тасталды! #}
+                            {% with choice_formset=None %}
+                                {% for temp_q_data in questions_with_forms %}
+                                    {% if temp_q_data.question_form.prefix == q_form.prefix %}
+                                        {% with choice_formset=temp_q_data.choice_formset %}
+                                            {% if choice_formset %}
+                                            {# Блок сұрақ типіне байланысты көрсетіледі/жасырылады #}
+                                            <div class="choice-formset-container mt-3 {% if not q_form.instance.pk or q_form.instance.question_type not in 'MCQ,MAQ,TF' %}initially-hidden{% endif %}" >
+                                                <h6>{% trans "Жауап нұсқалары" %}</h6>
+                                                {{ choice_formset.management_form }} {# Management формасы негізгі формаға кіреді #}
+                                                {% if choice_formset.non_form_errors %} <div class="alert alert-warning p-1">{{ choice_formset.non_form_errors }}</div> {% endif %}
+
+                                                {# ID-ны префикспен жасаймыз #}
+                                                <div id="choice-forms-{{ choice_formset.prefix }}">
+                                                    {% for choice_form in choice_formset %}
+                                                        {# choice_form қателерін көрсету #}
+                                                        {% if choice_form.non_field_errors %}
+                                                            <div class="alert alert-danger alert-sm p-1">{{ choice_form.non_field_errors }}</div>
+                                                        {% endif %}
+                                                        <div class="row align-items-center choice-form mb-2">
+                                                            {% if choice_form.instance.pk %}{{ choice_form.id }}{% endif %}
+                                                            <div class="col">
+                                                                {% render_field choice_form.text placeholder=choice_form.text.label class+="form-control form-control-sm" %}
+                                                                {% if choice_form.text.errors %}<div class="text-danger small mt-1">{{ choice_form.text.errors|striptags }}</div>{% endif %}
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <div class="form-check form-check-inline">
+                                                                     {% render_field choice_form.is_correct class+="form-check-input" %}
+                                                                     <label class="form-check-label" for="{{ choice_form.is_correct.id_for_label }}">{% trans "Дұрыс" %}</label>
+                                                                     {% if choice_form.is_correct.errors %}<div class="text-danger small mt-1">{{ choice_form.is_correct.errors|striptags }}</div>{% endif %}
+                                                                 </div>
+                                                            </div>
+                                                            {% if choice_formset.can_delete %}
+                                                            <div class="col-auto choice-delete">
+                                                                <div class="form-check form-check-inline">
+                                                                    {% render_field choice_form.DELETE class+="form-check-input border-danger" %}
+                                                                    <label for="{{ choice_form.DELETE.id_for_label }}" class="text-danger">{% trans "Жою" %}</label>
+                                                                 </div>
+                                                            </div>
+                                                            {% endif %}
+                                                             {# Жалпы қателер жоғарыда көрсетілді #}
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                                {# Жаңа нұсқа формасы үшін шаблон (JS үшін) #}
+                                                <div id="empty-choice-form-{{ choice_formset.prefix }}" style="display:none;">
+                                                     {% with choice_form=choice_formset.empty_form %} {# Бос форманы қолдану #}
+                                                     <div class="row align-items-center choice-form mb-2">
+                                                         {{ choice_form.id }}
+                                                         <div class="col">{% render_field choice_form.text placeholder=choice_form.text.label class+="form-control form-control-sm" %}</div>
+                                                         <div class="col-auto">
+                                                             <div class="form-check form-check-inline">
+                                                                  {% render_field choice_form.is_correct class+="form-check-input" %}
+                                                                  <label class="form-check-label" for="{{ choice_form.is_correct.id_for_label }}">{% trans "Дұрыс" %}</label>
+                                                              </div>
+                                                         </div>
+                                                         {% if choice_formset.can_delete %} {# Негізгі формсеттен алу #}
+                                                         <div class="col-auto choice-delete">
+                                                             <div class="form-check form-check-inline">
+                                                                  {% render_field choice_form.DELETE class+="form-check-input border-danger" %}
+                                                                  <label for="{{ choice_form.DELETE.id_for_label }}" class="text-danger">{% trans "Жою" %}</label>
+                                                              </div>
+                                                         </div>
+                                                         {% endif %}
+                                                     </div>
+                                                     {% endwith %}
+                                                </div>
+                                                 <button type="button" class="btn btn-sm btn-outline-secondary add-choice-btn mt-2" data-formset-prefix="{{ choice_formset.prefix }}">{% trans "+ Нұсқа қосу" %}</button>
+                                            </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endwith %}
+                            {# --- Нұсқалар формсеті соңы --- #}
+
+
+                             {% if question_formset.can_delete %}
+                                <div class="form-check delete-question-btn">
+                                    {% render_field q_form.DELETE class+="form-check-input" %}
+                                    <label class="form-check-label" for="{{ q_form.DELETE.id_for_label }}">{% trans "Сұрақты жою" %}</label>
+                                </div>
+                            {% endif %}
+                        </fieldset>
+                    {% endfor %}
+                </div>
+
+                 {# --- Жаңа сұрақ қосуға арналған ШАБЛОН --- #}
+                 <div id="empty-question-form" style="display:none;">
+                      <fieldset class="question-form">
+                         <legend>{% trans "Жаңа сұрақ" %}</legend>
+                         {{ question_formset.empty_form.id }}
+                         {# Негізгі сұрақ өрістері #}
+                         <div class="row">
+                             <div class="col-12 mb-3">
+                                 <label for="{{ question_formset.empty_form.text.id_for_label }}" class="form-label">{{ question_formset.empty_form.text.label }}<span class="text-danger">*</span></label>
+                                 {% render_field question_formset.empty_form.text %}
+                             </div>
+                             <div class="col-md-4 mb-3">
+                                 <label for="{{ question_formset.empty_form.question_type.id_for_label }}" class="form-label">{{ question_formset.empty_form.question_type.label }}<span class="text-danger">*</span></label>
+                                 {% render_field question_formset.empty_form.question_type class+="form-select form-select-sm question-type-selector" %}
+                             </div>
+                             <div class="col-md-4 mb-3">
+                                  <label for="{{ question_formset.empty_form.points.id_for_label }}" class="form-label">{{ question_formset.empty_form.points.label }}<span class="text-danger">*</span></label>
+                                  {% render_field question_formset.empty_form.points class+="form-control form-control-sm" %}
+                             </div>
+                             <div class="col-md-4 mb-3">
+                                  <label for="{{ question_formset.empty_form.order.id_for_label }}" class="form-label">{{ question_formset.empty_form.order.label }}<span class="text-danger">*</span></label>
+                                  {% render_field question_formset.empty_form.order class+="form-control form-control-sm" %}
+                             </div>
+                         </div>
+
+                         {# --- ЖАҢА: Жаңа сұрақ үшін нұсқалар блогының шаблоны --- #}
+                         {# Бұл жерде префикс және ID __prefix__ арқылы жасалады, JS ауыстырады #}
+                         {% with choice_form=empty_choice_form_for_template %} {# View-тен алған бос форма үлгісін қолданамыз #}
+                         <div class="choice-formset-container mt-3 initially-hidden">
+                             <h6>{% trans "Жауап нұсқалары" %}</h6>
+                             {# Жаңа сұрақ үшін нұсқалардың Management формасы. Префиксті JS дұрыстайды #}
+                             <input type="hidden" name="choices-questions-__prefix__-TOTAL_FORMS" value="0" id="id_choices-questions-__prefix__-TOTAL_FORMS">
+                             <input type="hidden" name="choices-questions-__prefix__-INITIAL_FORMS" value="0" id="id_choices-questions-__prefix__-INITIAL_FORMS">
+                             <input type="hidden" name="choices-questions-__prefix__-MIN_NUM_FORMS" value="0" id="id_choices-questions-__prefix__-MIN_NUM_FORMS">
+                             <input type="hidden" name="choices-questions-__prefix__-MAX_NUM_FORMS" value="1000" id="id_choices-questions-__prefix__-MAX_NUM_FORMS">
+
+                             <div id="choice-forms-choices-questions-__prefix__"> {# Контейнер ID дұрысталды #}
+                                 {# Бастапқыда бос #}
+                             </div>
+                             {# Жаңа нұсқа шаблоны #}
+                             <div id="empty-choice-form-choices-questions-__prefix__" style="display:none;"> {# Шаблон ID дұрысталды #}
+                                 <div class="row align-items-center choice-form mb-2">
+                                     {{ choice_form.id }} {# ID-дағы __prefix__ JS арқылы ауыстырылады #}
+                                     <div class="col">{% render_field choice_form.text placeholder=choice_form.text.label class+="form-control form-control-sm" %}</div>
+                                     <div class="col-auto">
+                                         <div class="form-check form-check-inline">
+                                              {% render_field choice_form.is_correct class+="form-check-input" %}
+                                              <label class="form-check-label" for="{{ choice_form.is_correct.id_for_label }}">{% trans "Дұрыс" %}</label>
+                                          </div>
+                                     </div>
+                                     {# Бұл жерде can_delete тексеруі қиын, әзірге қосамыз #}
+                                     <div class="col-auto choice-delete">
+                                         <div class="form-check form-check-inline">
+                                              {% render_field choice_form.DELETE class+="form-check-input border-danger" %}
+                                              <label for="{{ choice_form.DELETE.id_for_label }}" class="text-danger">{% trans "Жою" %}</label>
+                                          </div>
+                                     </div>
+                                 </div>
+                             </div>
+                             <button type="button" class="btn btn-sm btn-outline-secondary add-choice-btn mt-2" data-formset-prefix="choices-questions-__prefix__">{% trans "+ Нұсқа қосу" %}</button>
+                         </div>
+                         {% endwith %}
+                         {# --- Нұсқалар блогының шаблоны соңы --- #}
+
+                         {% if question_formset.can_delete %}
+                             <div class="form-check delete-question-btn">
+                                 {% render_field question_formset.empty_form.DELETE class+="form-check-input" %}
+                                 <label class="form-check-label" for="{{ question_formset.empty_form.DELETE.id_for_label }}">{% trans "Жою" %}</label>
+                             </div>
+                         {% endif %}
+                      </fieldset>
+                 </div>
+                 {# --- Жаңа сұрақ шаблоны соңы --- #}
+            </div>
+        </div>
+
+        {# Негізгі форманы сақтау батырмасы (өзгеріссіз) #}
+         <div class="mt-4 d-flex justify-content-end">
+             <a href="{% url 'list_assessments' %}" class="btn btn-secondary me-2"> <i class="fas fa-times me-1"></i> {% trans "Болдырмау" %} </a>
+             <button type="submit" form="main-assessment-form" class="btn btn-primary"> <i class="fas fa-save me-1"></i> {% trans "Өзгерістерді сақтау" %} </button>
+         </div>
+
+    </form>
+
+{% endblock %}
+
+{% block extra_js %}
+{# JavaScript коды алдыңғы жауаптағыдай қалады, тек replacePrefix функциясын тексеру керек #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const questionsContainer = document.getElementById('question-forms-container');
+    const addQuestionButton = document.getElementById('add-question-btn');
+    const questionTotalFormsInput = document.querySelector('#id_questions-TOTAL_FORMS');
+    const emptyQuestionTemplate = document.getElementById('empty-question-form');
+
+    function updateChoiceVisibility(questionFormElement) {
+        const questionTypeSelector = questionFormElement.querySelector('.question-type-selector');
+        const choiceContainer = questionFormElement.querySelector('.choice-formset-container');
+        if (!questionTypeSelector || !choiceContainer) return;
+        const selectedType = questionTypeSelector.value;
+        const typesWithChoices = ['MCQ', 'MAQ', 'TF'];
+        if (typesWithChoices.includes(selectedType)) {
+            choiceContainer.classList.remove('initially-hidden');
+            choiceContainer.style.display = '';
+        } else {
+            choiceContainer.style.display = 'none';
+        }
+    }
+
+    // Функция для замены всех плейсхолдеров __prefix__ в HTML строке
+    // Бұл функция енді тек сұрақтардың префиксін ('questions-__prefix__') ауыстыруы керек.
+    // Нұсқалардың ішіндегі __prefix__-терді де ауыстыру керек.
+    function replaceAllPrefixes(htmlString, formIndex) {
+        const regex = new RegExp('__prefix__', 'g');
+        return htmlString.replace(regex, formIndex);
+    }
+
+
+    if (addQuestionButton && questionTotalFormsInput && questionsContainer && emptyQuestionTemplate) {
+        addQuestionButton.addEventListener('click', function() {
+            let formNum = parseInt(questionTotalFormsInput.value);
+            let emptyFormHtml = emptyQuestionTemplate.innerHTML;
+
+            // Заменяем все __prefix__ на актуальный номер formNum
+            let newFormHtml = replaceAllPrefixes(emptyFormHtml, formNum);
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newFormHtml;
+            const newQuestionFormElement = tempDiv.firstElementChild;
+
+            const legend = newQuestionFormElement.querySelector('legend');
+            if (legend) {
+                 legend.textContent = `{% trans "Сұрақ" %} #${formNum + 1}`;
+            }
+
+            questionsContainer.appendChild(newQuestionFormElement);
+            questionTotalFormsInput.value = formNum + 1;
+
+            updateChoiceVisibility(newQuestionFormElement);
+
+            const newTypeSelector = newQuestionFormElement.querySelector('.question-type-selector');
+            if (newTypeSelector) {
+                newTypeSelector.addEventListener('change', function() {
+                    updateChoiceVisibility(newQuestionFormElement);
+                });
+            }
+
+            let newTextAreaId = `id_questions-${formNum}-text`;
+            let newTextArea = document.getElementById(newTextAreaId);
+            if (newTextArea && typeof CKEDITOR !== 'undefined') {
+                if (CKEDITOR.instances[newTextAreaId]) {
+                    CKEDITOR.instances[newTextAreaId].destroy(true);
+                }
+                CKEDITOR.replace(newTextAreaId);
+                console.log(`CKEditor initialized for ${newTextAreaId}`);
+            }
+        });
+    } else {
+        console.error("Could not find necessary elements for adding question forms.", { /* ... */ });
+    }
+
+    questionsContainer.querySelectorAll('.question-form').forEach(formElement => {
+        if (formElement.closest('#empty-question-form')) return;
+        updateChoiceVisibility(formElement);
+        const typeSelector = formElement.querySelector('.question-type-selector');
+        if (typeSelector) {
+            typeSelector.addEventListener('change', function() {
+                updateChoiceVisibility(formElement);
+            });
+        }
+    });
+
+    document.body.addEventListener('click', function(event) {
+        if (event.target.classList.contains('add-choice-btn')) {
+            const button = event.target;
+            const prefix = button.dataset.formsetPrefix; // Мысалы: choices-questions-questions-0 немесе choices-questions-__prefix__
+
+            // Шаблон префиксін дұрыс алу керек
+            const templatePrefix = prefix.includes('__prefix__') ? 'choices-questions-__prefix__' : prefix;
+            const choicesContainer = document.getElementById(`choice-forms-${prefix}`); // Контейнер ID дұрыс па? Иә, ол префикспен бірдей
+            const totalFormsInput = document.querySelector(`#id_${prefix}-TOTAL_FORMS`);
+            const emptyFormTemplate = document.getElementById(`empty-choice-form-${templatePrefix}`); // Шаблон ID
+
+            if (totalFormsInput && choicesContainer && emptyFormTemplate) {
+                let formNum = parseInt(totalFormsInput.value);
+                let emptyFormHtml = emptyFormTemplate.innerHTML;
+
+                // Заменяем __prefix__ в шаблоне пустой формы варианта
+                let newFormHtml = emptyFormHtml.replace(/__prefix__/g, formNum);
+
+                choicesContainer.insertAdjacentHTML('beforeend', newFormHtml);
+                totalFormsInput.value = formNum + 1;
+            } else {
+                 console.error("Could not find necessary elements for adding choice for prefix:", prefix, {
+                    totalFormsInput: !!totalFormsInput,
+                    choicesContainer: !!choicesContainer,
+                    emptyFormTemplate: !!emptyFormTemplate
+                 });
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'dashboard_base.html' %}
+{% load static i18n %}
+
+{% block dashboard_title %}{% trans "Тағайындалған БЖБ/ТЖБ" %}{% endblock %}
+
+{% block dashboard_content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">{% trans "Маған тағайындалған БЖБ/ТЖБ" %}</h1>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            {% if assessments %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">{% trans "Пән" %}</th>
+                                <th scope="col">{% trans "Атауы" %}</th>
+                                <th scope="col">{% trans "Түрі" %}</th>
+                                <th scope="col">{% trans "Мұғалім" %}</th>
+                                <th scope="col">{% trans "Аяқталу мерзімі" %}</th>
+                                <th scope="col" class="text-center">{% trans "Статус" %}</th>
+                                <th scope="col">{% trans "Әрекет" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assessment in assessments %}
+                            <tr>
+                                <td>{{ assessment.subject.name|default:"-" }}</td>
+                                <td class="fw-medium">{{ assessment.title }}</td>
+                                <td>{{ assessment.get_exam_type_display }}</td>
+                                <td>{{ assessment.teacher.get_full_name|default:assessment.teacher.username|default:"-" }}</td>
+                                <td>{{ assessment.due_date|date:"d.m.Y H:i"|default:"-" }}</td>
+                                <td class="text-center">
+                                    {% if assessment.pk in submitted_ids %}
+                                        <span class="badge bg-success">{% trans "Тапсырылды" %}</span>
+                                    {% else %}
+                                         {% if assessment.due_date and assessment.due_date < now %} {# now контекстке қосу керек #}
+                                             <span class="badge bg-danger">{% trans "Мерзімі өтті" %}</span>
+                                         {% else %}
+                                             <span class="badge bg-warning text-dark">{% trans "Тапсырылмады" %}</span>
+                                         {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if assessment.pk in submitted_ids %}
+                                        {# Тапсырылған болса, нәтижені көру #}
+                                        {# Submission ID-сын табу керек, бұл күрделірек #}
+                                        {# Пока просто ссылка на список #}
+                                        <a href="{% url 'view_submission_result' pk=assessment.pk %}" class="btn btn-sm btn-outline-info"> {# Бұл жерде submission pk керек #}
+                                             <i class="fas fa-eye me-1"></i> {% trans "Нәтиже" %}
+                                        </a>
+                                    {% else %}
+                                         {% if assessment.due_date and assessment.due_date < now %}
+                                             <button class="btn btn-sm btn-secondary" disabled>{% trans "Өту" %}</button>
+                                         {% else %}
+                                             {# Тапсырылмаған болса, өтуге сілтеме #}
+                                             <a href="{% url 'take_assessment' pk=assessment.pk %}" class="btn btn-sm btn-primary">
+                                                 <i class="fas fa-play me-1"></i> {% trans "Өту" %}
+                                             </a>
+                                         {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-light text-center m-4">
+                    {% trans "Сізге әлі БЖБ/ТЖБ тағайындалмады." %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

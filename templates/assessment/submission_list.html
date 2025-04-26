@@ -1,0 +1,83 @@
+{% extends 'dashboard_base.html' %}
+{% load static i18n %}
+
+{% block dashboard_title %}{% blocktrans with title=assessment.title %}Тапсырылған жұмыстар: {{ title }}{% endblocktrans %}{% endblock %}
+
+{% block dashboard_content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">{% blocktrans with title=assessment.title %}"{{ title }}" бойынша тапсырылған жұмыстар{% endblocktrans %}</h1>
+        <div>
+            <a href="{% url 'list_assessments' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> {% trans "Менің БЖБ/ТЖБ тізіміме оралу" %}
+            </a>
+        </div>
+    </div>
+
+    {# Информация о БЖБ/ТЖБ #}
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">{{ assessment.title }}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">{{ assessment.subject.name }} - {{ assessment.school_class.name }}</h6>
+            <p class="card-text small">
+                {% trans "Түрі" %}: {{ assessment.get_exam_type_display }} |
+                {% trans "Тоқсан" %}: {{ assessment.term }} |
+                {% trans "Макс балл" %}: {{ assessment.max_score|default:"N/A" }}
+            </p>
+        </div>
+    </div>
+
+    {# Таблица с работами #}
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">{% trans "Оқушылардың жұмыстары" %}</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if submissions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">{% trans "Оқушы" %}</th>
+                                <th scope="col">{% trans "Тапсырылған уақыты" %}</th>
+                                <th scope="col" class="text-center">{% trans "Статус" %}</th>
+                                <th scope="col" class="text-center">{% trans "Балл" %}</th>
+                                <th scope="col">{% trans "Әрекет" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for submission in submissions %}
+                            <tr>
+                                <td class="fw-medium">{{ submission.student.get_full_name|default:submission.student.username }}</td>
+                                <td>{{ submission.submitted_at|date:"d.m.Y H:i"|default:"-" }}</td>
+                                <td class="text-center">
+                                    {% if submission.is_graded %}
+                                        <span class="badge bg-success">{% trans "Бағаланды" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">{% trans "Бағаланбады" %}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if submission.is_graded %}
+                                        {{ submission.score|floatformat:"0" }}/{{ assessment.max_score|floatformat:"0" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'grade_submission' submission_id=submission.pk %}" class="btn btn-sm btn-outline-primary">
+                                         <i class="fas fa-edit me-1"></i> {% if submission.is_graded %}{% trans "Бағаны өзгерту" %}{% else %}{% trans "Бағалау" %}{% endif %}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-light text-center m-4">
+                    {% trans "Бұл БЖБ/ТЖБ бойынша әлі ешкім жұмыс тапсырмады." %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

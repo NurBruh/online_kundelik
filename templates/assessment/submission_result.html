@@ -1,0 +1,190 @@
+{% extends 'dashboard_base.html' %}
+{% load static i18n %}
+{% load template_extras %} {# get_item фильтрі үшін template_extras.py файлын жасау керек #}
+
+{% block dashboard_title %}
+    {% blocktrans with title=assessment.title student_name=submission.student.get_full_name %}
+        Нәтиже: {{ title }} ({{ student_name }})
+    {% endblocktrans %}
+{% endblock %}
+
+{% block dashboard_content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            {% blocktrans with title=assessment.title %}
+                Нәтиже: {{ title }}
+            {% endblocktrans %}
+        </h1>
+        <div>
+             {% if request.user.role == 'student' %}
+                <a href="{% url 'list_assigned_assessments' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> {% trans "Тапсырмалар тізіміне оралу" %}
+                </a>
+             {% elif request.user.role == 'teacher' %}
+                 <a href="{% url 'view_submissions' assessment_id=assessment.pk %}" class="btn btn-sm btn-outline-secondary">
+                     <i class="fas fa-arrow-left me-1"></i> {% trans "Тапсырмалар тізіміне оралу" %}
+                 </a>
+             {% endif %}
+
+             {% if request.user == assessment.teacher or request.user.is_superuser %}
+                <a href="{% url 'edit_assessment' pk=assessment.pk %}" class="btn btn-sm btn-outline-primary ms-2">
+                    <i class="fas fa-edit me-1"></i> {% trans "Бағалауды өңдеу" %}
+                </a>
+                {% if not submission.is_graded %}
+                <a href="{% url 'grade_submission' submission_id=submission.pk %}" class="btn btn-sm btn-success ms-2">
+                     <i class="fas fa-check-double me-1"></i> {% trans "Жұмысты бағалау" %}
+                </a>
+                {% endif %}
+             {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">{{ assessment.subject.name }} - {{ assessment.get_exam_type_display }}</h5>
+                    <small class="text-muted">{{ submission.student.get_full_name }} - {{ submission.student.userprofile.grade.name|default:"Сынып жоқ" }}</small>
+                </div>
+                <div>
+                    {# --- ★★★ ОСЫ БЛОК views.py-да есептелген шектерді қолданады ★★★ --- #}
+                    <span class="fw-bold fs-5
+                        {% comment %} Балл мен шектер бар болғанда ғана салыстыру {% endcomment %}
+                        {% if submission.score is not None and threshold_80 is not None and submission.score >= threshold_80 %}
+                            text-success {# 80% немесе одан жоғары болса #}
+                        {% elif submission.score is not None and threshold_50 is not None and submission.score >= threshold_50 %}
+                            text-warning {# 50% немесе одан жоғары болса #}
+                        {% elif submission.score is not None %}
+                            text-danger {# 50%-дан төмен болса #}
+                        {% else %}
+                            text-muted {# Балл жоқ болса #}
+                        {% endif %}">
+
+                        {% if submission.is_graded %}
+                            {{ submission.score|default:"-" }}/{{ assessment.max_score|default:"-" }}
+                        {% else %}
+                             ({% trans "Бағаланбаған" %})
+                        {% endif %}
+                    </span>
+                     {# --- ★★★ --- #}
+                    {% if submission.is_graded and submission.graded_at %}
+                    <small class="d-block text-muted">{% trans "Бағаланды" %}: {{ submission.graded_at|date:"d.m.Y H:i" }}</small>
+                    {% else %}
+                    <small class="d-block text-muted">{% trans "Тапсырылды" %}: {{ submission.submitted_at|date:"d.m.Y H:i" }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <h4 class="mb-3">{% trans "Сіздің жауаптарыңыз" %}</h4>
+            {% for answer in answers %}
+                {# Дұрыс/бұрыс екенін анықтау (OPEN сұрақтарынан басқа) #}
+                {% with question=answer.question %}
+                    {% is_correct_answer answer correct_choices_ids selected_choices_map as is_correct %} {# template_extras.py қажет #}
+                    <div class="mb-4 p-3 border rounded
+                        {% if question.question_type != 'OPEN' and is_correct %}
+                            border-success-subtle bg-success-subtle
+                        {% elif question.question_type != 'OPEN' and not is_correct and submission.is_graded %}
+                            border-danger-subtle bg-danger-subtle
+                        {% endif %}">
+                        <p class="fw-semibold">
+                           {{ question.order }}. {{ question.text|safe }}
+                           <span class="text-muted small">({{ question.points }} {% trans "балл" %})</span>
+                           {# Дұрыс/қате белгісі (егер бағаланған болса) #}
+                           {% if question.question_type != 'OPEN' and submission.is_graded %}
+                                {% if is_correct %}
+                                    <i class="fas fa-check-circle text-success ms-2" title="{% trans 'Дұрыс' %}"></i>
+                                {% else %}
+                                    <i class="fas fa-times-circle text-danger ms-2" title="{% trans 'Қате' %}"></i>
+                                {% endif %}
+                           {% endif %}
+                        </p>
+                        <hr class="my-2">
+                        <div>
+                            {% if question.question_type in 'MCQ,TF' %}
+                                {% with user_choice=answer.selected_choice %}
+                                    {% for choice in question.choices.all %}
+                                        <div class="form-check mb-1 {% if choice.is_correct %}text-success{% endif %}">
+                                            <input class="form-check-input" type="radio" name="q_{{ question.pk }}" id="choice_{{ choice.pk }}" value="{{ choice.pk }}" disabled
+                                                   {% if user_choice and user_choice.pk == choice.pk %}checked{% endif %}>
+                                            <label class="form-check-label {% if user_choice and user_choice.pk == choice.pk and not choice.is_correct %}text-danger text-decoration-line-through{% endif %}" for="choice_{{ choice.pk }}">
+                                                {{ choice.text }}
+                                                {# Дұрыс жауапты көрсету #}
+                                                {% if choice.is_correct %}
+                                                     <i class="fas fa-check text-success ms-1" title="{% trans 'Дұрыс жауап' %}"></i>
+                                                {% elif user_choice and user_choice.pk == choice.pk %}
+                                                     <i class="fas fa-times text-danger ms-1" title="{% trans 'Сіздің таңдауыңыз (қате)' %}"></i>
+                                                {% endif %}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                    {% if not user_choice %}
+                                        <p class="text-muted small mt-2"><em>{% trans "Бұл сұраққа жауап берілмеген." %}</em></p>
+                                    {% endif %}
+                                 {% endwith %}
+
+                            {% elif question.question_type == 'MAQ' %}
+                                 {% with user_choices_pks=selected_choices_map|get_item:question.pk %}
+                                    {% for choice in question.choices.all %}
+                                        <div class="form-check mb-1 {% if choice.is_correct %}text-success{% endif %}">
+                                            <input class="form-check-input" type="checkbox" name="q_{{ question.pk }}_{{ choice.pk }}" id="choice_{{ choice.pk }}" value="{{ choice.pk }}" disabled
+                                                   {% if choice.pk in user_choices_pks %}checked{% endif %}>
+                                            <label class="form-check-label {% if choice.pk in user_choices_pks and not choice.is_correct %}text-danger text-decoration-line-through{% endif %}" for="choice_{{ choice.pk }}">
+                                                {{ choice.text }}
+                                                {# Дұрыс/қате белгілері #}
+                                                {% if choice.is_correct %}
+                                                     <i class="fas fa-check text-success ms-1" title="{% trans 'Дұрыс жауап' %}"></i>
+                                                {% elif choice.pk in user_choices_pks %}
+                                                     <i class="fas fa-times text-danger ms-1" title="{% trans 'Сіздің таңдауыңыз (қате)' %}"></i>
+                                                {% endif %}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                    {% if not user_choices_pks %}
+                                         <p class="text-muted small mt-2"><em>{% trans "Бұл сұраққа жауап берілмеген." %}</em></p>
+                                    {% endif %}
+                                 {% endwith %}
+
+                            {% elif question.question_type == 'OPEN' %}
+                                {% if answer.text_answer %}
+                                    <p><strong>{% trans "Сіздің мәтіндік жауабыңыз:" %}</strong></p>
+                                    <div class="p-2 bg-light border rounded mb-2">
+                                        {{ answer.text_answer|linebreaksbr }}
+                                    </div>
+                                {% endif %}
+                                {% if answer.attached_file %}
+                                    <p><strong>{% trans "Сіздің тіркелген файлыңыз:" %}</strong></p>
+                                    <p>
+                                        <a href="{{ answer.attached_file.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-download me-1"></i> {{ answer.attached_file.name|slice:"8:" }} {# Көрінетін файл атын қысқарту #}
+                                        </a>
+                                    </p>
+                                {% endif %}
+                                {% if not answer.text_answer and not answer.attached_file %}
+                                    <p class="text-muted small"><em>{% trans "Бұл сұраққа жауап берілмеген." %}</em></p>
+                                {% endif %}
+                                {# Мұғалім қолмен қойған баллды көрсету #}
+                                {% if answer.score is not None %}
+                                    <p class="mt-2"><strong>{% trans "Мұғалімнің бағасы (осы сұрақ үшін):" %}</strong> {{ answer.score }} / {{ question.points }}</p>
+                                {% elif submission.is_graded %}
+                                     <p class="mt-2 text-muted"><em>{% trans "Бұл сұраққа мұғалім балл қоймаған." %}</em></p>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endwith %} {# question зміннасы үшін #}
+            {% empty %}
+                <p>{% trans "Бұл тапсырмаға жауаптар табылмады." %}</p>
+            {% endfor %}
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_js %}
+{# Бұл бетке қажетті қосымша JS болса, осы жерге қосуға болады #}
+<script>
+console.log("Submission result page loaded.");
+</script>
+{% endblock %}
