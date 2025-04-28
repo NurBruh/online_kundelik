@@ -10,12 +10,39 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 AUTH_USER_MODEL = 'kundelik.User'
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%@t#eom+=036p0@0=wu)-zlgs%z39_x#m91(j&odr$%mm)nm48'
+# Жақсырақ, бұл кілтті қоршаған орта айнымалысынан алу керек
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-%@t#eom+=036p0@0=wu)-zlgs%z39_x#m91(j&odr$%mm)nm48') # Әдепкі мән қалдырылды
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Хостингте DEBUG = False болуы керек. Алайда, қазіргі қатені жөндеу үшін True қалдыруға болады.
+# Production-ға шығарғанда False деп өзгертіңіз!
+DEBUG = True # Production үшін False деп өзгертіңіз
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+# --- ★★★ Хостинг үшін МАҢЫЗДЫ өзгерістер ★★★ ---
+ALLOWED_HOSTS = [
+    'kundelik.whispr.ru',
+    'www.kundelik.whispr.ru', # Егер www нұсқасы қолданылса
+    '127.0.0.1',
+    'localhost',
+    # Басқа қажетті хосттарды осында қосыңыз (мысалы, IP адрес)
+]
+
+# CSRF үшін сенімді домендер
+CSRF_TRUSTED_ORIGINS = [
+    'https://kundelik.whispr.ru',
+    'https://www.kundelik.whispr.ru', # Егер www нұсқасы қолданылса
+]
+
+# HTTPS үшін параметрлер (егер сайт https арқылы жұмыс істесе)
+# Production-да бұлардың True болғаны өте маңызды!
+CSRF_COOKIE_SECURE = True # Production үшін True
+SESSION_COOKIE_SECURE = True # Production үшін True
+# SECURE_SSL_REDIRECT = True # Веб-сервер бағыттамаса ғана True
+# SECURE_HSTS_SECONDS = 31536000 # Бір жыл (optional)
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True # (optional)
+# SECURE_HSTS_PRELOAD = True # (optional)
+# --- ★★★ Өзгерістер соңы ★★★ ---
+
 
 # Application definition
 
@@ -46,7 +73,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'strup.urls'
+ROOT_URLCONF = 'strup.urls' # Жобаңыздың негізгі urls.py файлының атын тексеріңіз
 
 TEMPLATES = [
     {
@@ -64,10 +91,11 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'strup.wsgi.application'
+WSGI_APPLICATION = 'strup.wsgi.application' # Жобаңыздың wsgi.py файлының атын тексеріңіз
 
 
 # Database
+# Дерекқор баптауларыңыз дұрыс екеніне көз жеткізіңіз
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -94,19 +122,20 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-LANGUAGE_CODE = 'kk'
+LANGUAGE_CODE = 'kk' # Немесе 'ru', 'en-us'
 TIME_ZONE = 'Asia/Almaty'
 USE_I18N = True
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/' # Басында және соңында '/' болуы маңызды
 STATICFILES_DIRS = [ BASE_DIR / 'static', ]
-# STATIC_ROOT = BASE_DIR / 'staticfiles' # Production үшін қажет болуы мүмкін
+# Production-да статикалық файлдарды жинау үшін STATIC_ROOT қажет болады
+# STATIC_ROOT = BASE_DIR / 'staticfiles_collected'
 
 # --- МЕДИА ФАЙЛДАР ---
-MEDIA_URL = '/media/'
+MEDIA_URL = '/media/' # Басында және соңында '/' болуы маңызды
 MEDIA_ROOT = BASE_DIR / 'media'
 # --- ---
 
