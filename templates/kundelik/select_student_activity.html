@@ -1,0 +1,51 @@
+{% extends 'dashboard_base.html' %}
+{% load static i18n %}
+
+{% block dashboard_title %}{% trans "Оқушыны таңдау" %}{% endblock %}
+
+{% block dashboard_content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">{% trans "Белсенділігін көру үшін оқушыны таңдаңыз" %}</h1>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">{% trans "Оқушылар тізімі" %}</h5>
+            {# Бұл жерге сынып бойынша фильтр қосуға болады #}
+        </div>
+        <div class="card-body p-0">
+            {% if students_in_school %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">{% trans "Оқушы" %}</th>
+                                <th scope="col">{% trans "Сынып" %}</th>
+                                <th scope="col">{% trans "Әрекет" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students_in_school %}
+                            <tr>
+                                <td class="fw-medium">{{ student.get_full_name|default:student.username }}</td>
+                                <td>{{ student.userprofile.school_class.name|default:"-" }}</td>
+                                <td>
+                                    {# --- Белсенділік бетіне сілтеме --- #}
+                                    <a href="{% url 'view_student_activity' student_id=student.pk %}" class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-chart-line me-1"></i> {% trans "Белсенділігін көру" %}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-light text-center m-4">
+                    {% trans "Сізге тіркелген оқушылар табылмады." %}
+                </div>
+            {% endif %}
+             {# --- Қате көрінген комментарий блогы алынып тасталды --- #}
+        </div>
+    </div>
+{% endblock %}

@@ -1,154 +1,172 @@
 {% extends 'dashboard_base.html' %}
-{% load static i18n %}
+{% load static i18n widget_tweaks %}
 
 {% block dashboard_title %}{% trans "БЖБ/ТЖБ бағасын қосу" %}{% endblock %}
 
 {% block extra_css %}
-{# add_daily_grades.html-дағыдай стильдер #}
 <style>
-    .class-selector-card {
-        background-color: #f8f9fa;
-        border-left: 4px solid #198754; /* Жасыл жолақ (БЖБ/ТЖБ үшін) */
-        border-radius: .375rem;
-    }
-    .form-label {
-        font-weight: 500;
-    }
+    .filter-card { background-color: #f8f9fa; border-left: 4px solid #198754; border-radius: .375rem; }
+    .form-label { font-weight: 500; margin-bottom: 0.25rem; font-size: 0.85rem; }
+    .table th, .table td { padding-top: 0.5rem; padding-bottom: 0.5rem; vertical-align: middle; }
+    .existing-grades-table th:last-child, .existing-grades-table td:last-child { width: 1%; white-space: nowrap; }
 </style>
 {% endblock %}
-
 
 {% block dashboard_content %}
 
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">{% trans "БЖБ/ТЖБ бағасын қосу" %}</h1>
+        <h1 class="h2">{% trans "БЖБ/ТЖБ бағасын қосу/Көру" %}</h1>
     </div>
 
-    {# --- БЛОК ВЫБОРА КЛАССА --- #}
-    <div class="card shadow-sm mb-4 class-selector-card">
+    {# --- ФИЛЬТРЛЕР БЛОГЫ --- #}
+    <div class="card shadow-sm mb-4 filter-card">
         <div class="card-body">
-            <form method="get" action="" class="row g-3 align-items-center">
-                <div class="col-md-6 col-lg-4">
-                    <label for="classSelect" class="form-label">{% trans "Сыныпты таңдаңыз:" %}</label>
-                    <select class="form-select form-select-sm" id="classSelect" name="class_id" onchange="this.form.submit()">
-                        <option value="">-- {% trans "Сынып" %} --</option>
-                        {% for class_item in teacher_classes %}
-                            <option value="{{ class_item.pk }}" {% if selected_class and selected_class.pk == class_item.pk %}selected{% endif %}>
-                                {{ class_item.name }}
-                            </option>
-                        {% endfor %}
+             <form method="get" action="" class="row g-3 align-items-end">
+                <div class="col-md-6 col-lg-3">
+                    <label for="classSelect" class="form-label">{% trans "Сынып:" %}</label>
+                    <select class="form-select form-select-sm" id="classSelect" name="class_id" required>
+                        <option value="">-- {% trans "Таңдаңыз" %} --</option>
+                        {% for class_item in teacher_classes %} <option value="{{ class_item.pk }}" {% if selected_class and selected_class.pk == class_item.pk %}selected{% endif %}> {{ class_item.name }} </option> {% endfor %}
                     </select>
                 </div>
-                 {# Ағымдағы URL параметрлерін сақтау үшін #}
-                 {% for key, value in request.GET.items %}
-                    {% if key != 'class_id' %}
-                        <input type="hidden" name="{{ key }}" value="{{ value }}">
-                    {% endif %}
-                 {% endfor %}
-                <div class="col-auto">
-                    {# Батырма қажет емес #}
+                 <div class="col-md-6 col-lg-3">
+                    <label for="subjectSelect" class="form-label">{% trans "Пән:" %}</label>
+                    <select class="form-select form-select-sm" id="subjectSelect" name="subject_id" required>
+                         <option value="">-- {% trans "Таңдаңыз" %} --</option>
+                         {% for subject in school_subjects %} <option value="{{ subject.pk }}" {% if selected_subject and selected_subject.pk == subject.pk %}selected{% endif %}> {{ subject.name }} </option> {% endfor %}
+                    </select>
                 </div>
-                 {% if not selected_class %}
-                 <div class="col-12">
-                     <small class="form-text text-muted">
-                        {% trans "Баға қою үшін жоғарыдан сыныпты таңдаңыз." %}
-                     </small>
-                 </div>
+                 <div class="col-md-4 col-lg-2">
+                    <label for="termSelect" class="form-label">{% trans "Тоқсан:" %}</label>
+                    <select class="form-select form-select-sm" id="termSelect" name="term" required>
+                         <option value="">--</option>
+                         {% for term_num in terms %} <option value="{{ term_num }}" {% if selected_term|stringformat:"s" == term_num|stringformat:"s" %}selected{% endif %}>{{ term_num }}</option> {% endfor %}
+                    </select>
+                </div>
+                 <div class="col-md-4 col-lg-2">
+                    <label for="examTypeSelect" class="form-label">{% trans "Түрі:" %}</label>
+                    <select class="form-select form-select-sm" id="examTypeSelect" name="exam_type" required>
+                         <option value="">--</option>
+                         {% for value, display in exam_type_choices %} <option value="{{ value }}" {% if selected_exam_type == value %}selected{% endif %}>{{ display }}</option> {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                     <button type="submit" class="btn btn-success btn-sm">{% trans "Көрсету" %}</button>
+                </div>
+                 {% if not selected_class or not selected_subject or not selected_term or not selected_exam_type %}
+                 <div class="col-12"> <small class="form-text text-muted"> {% trans "Бағаларды көру немесе қосу үшін жоғарыдан сыныпты, пәнді, тоқсанды және жұмыс түрін таңдаңыз." %} </small> </div>
                  {% endif %}
             </form>
         </div>
     </div>
-    {# --- КОНЕЦ БЛОКА ВЫБОРА КЛАССА --- #}
+    {# --- ФИЛЬТРЛЕР СОҢЫ --- #}
 
-    {# Django messages жүйесі хабарламаларды көрсетеді #}
-
-    {# Форманы тек 'show_form' True болғанда көрсету #}
     {% if show_form %}
-        <div class="card shadow-sm mt-4">
-             <div class="card-header py-3">
-                <h5 class="mb-0">
-                    {% blocktrans with class_name=selected_class.name %}БЖБ/ТЖБ бағасын қою: {{ class_name }} сыныбы{% endblocktrans %}
-                    <span class="badge bg-secondary rounded-pill ms-2">{{ students_count }} {% trans "оқушы" %}</span>
-                </h5>
-            </div>
-            <div class="card-body">
-                <form method="post" action="">
-                    {% csrf_token %}
-                    <input type="hidden" name="selected_class_id" value="{{ selected_class.pk }}">
-
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger" role="alert">
-                            {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
-                        </div>
-                    {% endif %}
-
-                    <div class="row">
-                        {% for field in form %}
-                            {% if not field.is_hidden %}
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ field.id_for_label }}" class="form-label">
-                                        {{ field.label }}{% if field.field.required %}<span class="text-danger">*</span>{% endif %}
-                                    </label>
-
-                                    {# --- СТУДЕНТ ӨРІСІН ТЕКСЕРУ (ТҮЗЕТІЛГЕН) --- #}
-                                    {% if field.name == 'student' %}
-                                        {# students_count контекст айнымалысын пайдалану #}
-                                        {% if students_count > 0 %}
-                                            {{ field }} {# Стандартты Select көрсету #}
-                                        {% else %}
-                                            <select class="form-select is-invalid" disabled><option>{% trans "Оқушылар жоқ" %}</option></select>
-                                            <div class="invalid-feedback d-block">{% trans "Бұл сыныпта оқушылар табылмады." %}</div>
-                                        {% endif %}
-                                    {# --- ТҮЗЕТУ СОҢЫ --- #}
-                                    {% else %}
-                                        {# Басқа өрістерді көрсету #}
-                                        {% if field.field.widget.input_type == 'select' %}
-                                            {{ field.as_widget }}
-                                        {% elif field.field.widget.input_type == 'number' %}
-                                             {{ field.as_widget }}
-                                        {% elif field.field.widget.input_type == 'text' or field.field.widget.input_type == 'email' %}
-                                            {{ field.as_widget }}
-                                        {% elif field.name == 'date' %}
-                                            <input type="date" name="{{ field.name }}" id="{{ field.id_for_label }}"
-                                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
-                                                   value="{{ field.value|date:'Y-m-d'|default:'' }}" {% if field.field.required %}required{% endif %}>
-                                        {% else %}
-                                            {{ field }}
-                                        {% endif %}
-                                    {% endif %}
-
-                                    {% if field.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in field.errors %}{{ error }}{% endfor %}
-                                        </div>
-                                    {% endif %}
-                                    {% if field.help_text %}
-                                        <div class="form-text">{{ field.help_text|safe }}</div>
-                                    {% endif %}
-                                </div>
-                            {% else %}
-                                {{ field }} {# Жасырын өрістерді көрсету #}
+        <div class="row">
+            <div class="col-lg-5 mb-4">
+                <div class="card shadow-sm">
+                     <div class="card-header py-3">
+                        <h5 class="mb-0">
+                            {% trans "Жаңа баға қосу" %}
+                            {% if selected_class and selected_subject and selected_term and selected_exam_type_display %}
+                                <small class="text-muted">({{ selected_class.name }}, {{ selected_subject.name }}, {{ selected_term }}-тоқсан, {{ selected_exam_type_display }})</small>
                             {% endif %}
-                        {% endfor %}
+                        </h5>
                     </div>
+                    <div class="card-body">
+                        <form method="post" action="">
+                            {% csrf_token %}
 
-                    <hr>
+                            {# --- ★★★ ИСПРАВЛЕНО ИМЯ ПОЛЯ: name="subject" ★★★ --- #}
+                            {% if selected_class %}<input type="hidden" name="class_id" value="{{ selected_class.pk }}">{% endif %}
+                            {% if selected_subject %}<input type="hidden" name="subject" value="{{ selected_subject.pk }}">{% endif %} {# <-- ИЗМЕНЕНО ЗДЕСЬ #}
+                            {% if selected_term %}<input type="hidden" name="term" value="{{ selected_term }}">{% endif %}
+                             {% if selected_exam_type %}<input type="hidden" name="exam_type" value="{{ selected_exam_type }}">{% endif %}
+                            {# --- ★★★ --- #}
 
-                    <div class="text-end mt-3">
-                        {# Батырманы тек студенттер бар болса ғана активті ету #}
-                        <button type="submit" class="btn btn-success" {% if students_count == 0 %}disabled{% endif %}>
-                            <i class="fas fa-file-signature me-1"></i> {% trans "Бағаны қосу" %}
-                        </button>
-                         <a href="?class_id={{ selected_class.pk }}" class="btn btn-outline-secondary">{% trans "Тазарту" %}</a>
+                            {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}</div>{% endif %}
+
+                             <div class="mb-3">
+                                <label for="{{ form.student.id_for_label }}" class="form-label">{{ form.student.label }}<span class="text-danger">*</span></label>
+                                {% if students_count > 0 %} {% render_field form.student class+="form-select form-select-sm" %}
+                                {% else %} <select class="form-select form-select-sm is-invalid" disabled><option>{% trans "Оқушылар жоқ" %}</option></select> {% endif %}
+                                {% if form.student.errors %}<div class="invalid-feedback d-block">{{ form.student.errors|striptags }}</div>{% endif %}
+                             </div>
+                             <div class="row">
+                                 <div class="col-md-6 mb-3">
+                                     <label for="{{ form.grade.id_for_label }}" class="form-label">{{ form.grade.label }}<span class="text-danger">*</span></label>
+                                     {% render_field form.grade class+="form-control form-control-sm" %}
+                                     {% if form.grade.errors %}<div class="invalid-feedback d-block">{{ form.grade.errors|striptags }}</div>{% endif %}
+                                 </div>
+                                  <div class="col-md-6 mb-3">
+                                     <label for="{{ form.max_grade.id_for_label }}" class="form-label">{{ form.max_grade.label }}<span class="text-danger">*</span></label>
+                                     {% render_field form.max_grade class+="form-control form-control-sm" %}
+                                     {% if form.max_grade.errors %}<div class="invalid-feedback d-block">{{ form.max_grade.errors|striptags }}</div>{% endif %}
+                                 </div>
+                             </div>
+                             <div class="mb-3">
+                                  <label for="{{ form.date.id_for_label }}" class="form-label">{{ form.date.label }}<span class="text-danger">*</span></label>
+                                  {% render_field form.date class+="form-control form-control-sm" %}
+                                   {% if form.date.errors %}<div class="invalid-feedback d-block">{{ form.date.errors|striptags }}</div>{% endif %}
+                              </div>
+                             <div class="mb-3">
+                                  <label for="{{ form.comment.id_for_label }}" class="form-label">{{ form.comment.label }}</label>
+                                  {% render_field form.comment class+="form-control form-control-sm" %}
+                                  {% if form.comment.errors %}<div class="invalid-feedback d-block">{{ form.comment.errors|striptags }}</div>{% endif %}
+                             </div>
+                             {% for field in form %}{% if field.is_hidden %}{{ field }}{% endif %}{% endfor %}
+                            <div class="text-end mt-2">
+                                <button type="submit" class="btn btn-success btn-sm" {% if students_count == 0 %}disabled{% endif %}>
+                                    <i class="fas fa-plus me-1"></i> {% trans "Бағаны қосу" %}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
             </div>
+
+             <div class="col-lg-7 mb-4">
+                 <div class="card shadow-sm">
+                     <div class="card-header py-3"> <h5 class="mb-0">{% trans "Бұрын қойылған бағалар" %}</h5> </div>
+                     <div class="card-body p-0">
+                         {% if existing_grades %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped table-hover mb-0 existing-grades-table">
+                                    <thead>
+                                        <tr>
+                                            <th>{% trans "Оқушы" %}</th>
+                                            <th class="text-center">{% trans "Балл" %}</th>
+                                            <th>{% trans "Комментарий" %}</th>
+                                            <th>{% trans "Мұғалім" %}</th>
+                                            <th>{% trans "Күні" %}</th>
+                                            <th>{% trans "Әрекет" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for grade in existing_grades %}
+                                            <tr>
+                                                <td>{{ grade.student.get_full_name|default:grade.student.username }}</td>
+                                                <td class="text-center fw-bold">{{ grade.grade }}/{{ grade.max_grade }}</td>
+                                                <td>{{ grade.comment|default:"-" }}</td>
+                                                <td>{{ grade.teacher.get_full_name|default:grade.teacher.username|default:"(Белгісіз)" }}</td>
+                                                 <td>{{ grade.date|date:"d.m.Y" }}</td>
+                                                <td>
+                                                    {% if request.user == grade.teacher or request.user.role in 'admin,director' or request.user.is_superuser %}
+                                                    <a href="{% url 'edit_exam_grade' pk=grade.pk %}" class="btn btn-outline-primary btn-sm py-0 px-1" title="{% trans 'Өңдеу' %}"> <i class="fas fa-edit small"></i> </a>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-light text-center m-3 mb-0"> {% trans "Таңдалған критерийлер бойынша бағалар табылмады." %} </div>
+                        {% endif %}
+                     </div>
+                 </div>
+             </div>
         </div>
-    {# Егер форма көрсетілмесе, бірақ сынып таңдалса #}
-    {% elif selected_class and not show_form %}
-         <a href="{% url 'add_exam_grade' %}" class="btn btn-secondary mt-3">
-             <i class="fas fa-arrow-left me-1"></i> {% trans "Басқа сынып таңдау" %}
-         </a>
     {% endif %}
 
 {% endblock %}

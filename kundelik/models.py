@@ -208,7 +208,9 @@ class Submission(models.Model):
                     calculated_score += question.points
             # OPEN сұрақтарын мұғалім қолмен бағалайды, сондықтан олар бұл жерде есептелмейді.
 
-        return calculated_score
+        # Егер балл null болса, 0 қайтарамыз
+        return calculated_score if calculated_score is not None else 0
+
 
 class Answer(models.Model):
     submission = models.ForeignKey(Submission, verbose_name="Тапсыру", on_delete=models.CASCADE, related_name='answers')
@@ -259,3 +261,28 @@ class Answer(models.Model):
             return f"{q_text}... -> (OPEN) Файл: {os.path.basename(self.attached_file.name)}"
         else:
             return f"{q_text}... (Жауап жоқ)"
+
+# --- ★★★ ЖАҢА МОДЕЛЬ: Белсенділік Журналы ★★★ ---
+class ActivityLog(models.Model):
+    ACTIVITY_TYPES = [
+        ('LOGIN', 'Жүйеге кіру'),
+        ('SUBMIT_ASSESSMENT', 'БЖБ/ТЖБ тапсыру'),
+        # Болашақта қосуға болатын басқа типтер:
+        # ('VIEW_LESSON', 'Сабақты қарау'),
+        # ('COMPLETE_HOMEWORK', 'Үй тапсырмасын орындау'),
+        # ('POST_MESSAGE', 'Хабарлама жазу'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='activity_logs', verbose_name="Пайдаланушы")
+    activity_type = models.CharField("Әрекет түрі", max_length=30, choices=ACTIVITY_TYPES, db_index=True) # Іздеуді жылдамдату үшін индекс
+    timestamp = models.DateTimeField("Уақыты", default=timezone.now, db_index=True) # Уақыт бойынша сұрыптау/фильтрлеу үшін индекс
+    details = models.JSONField("Қосымша ақпарат", null=True, blank=True) # Мысалы: {'assessment_id': 1, 'submission_id': 5}
+
+    class Meta:
+        verbose_name = "Белсенділік журналы"
+        verbose_name_plural = "Белсенділік журналдары"
+        ordering = ['-timestamp'] # Әдепкі сұрыптау: жаңалары бірінші
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_activity_type_display()} - {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
+# --- ★★★ Модель соңы ★★★ ---

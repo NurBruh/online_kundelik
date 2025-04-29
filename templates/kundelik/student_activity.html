@@ -1,0 +1,129 @@
+{% extends 'dashboard_base.html' %}
+{% load static i18n %}
+
+{% block dashboard_title %}
+    {% blocktrans with student_name=student.get_full_name|default:student.username %}
+        Оқушы белсенділігі: {{ student_name }}
+    {% endblocktrans %}
+{% endblock %}
+
+{% block dashboard_content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+             {% blocktrans with student_name=student.get_full_name|default:student.username %}
+                Оқушы белсенділігі: {{ student_name }}
+            {% endblocktrans %}
+        </h1>
+        {# Артқа қайту сілтемесін қосуға болады, мысалы: #}
+        <a href="{% url 'select_student_for_activity' %}" class="btn btn-sm btn-outline-secondary">
+             <i class="fas fa-arrow-left me-1"></i> {% trans "Оқушыны таңдауға оралу" %}
+        </a>
+    </div>
+
+    {# Кезеңді таңдау формасы #}
+    <form method="get" class="mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label for="days-select" class="form-label">{% trans "Кезең:" %}</label>
+                <select name="days" id="days-select" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="7" {% if period_days == 7 %}selected{% endif %}>{% trans "Соңғы 7 күн" %}</option>
+                    <option value="14" {% if period_days == 14 %}selected{% endif %}>{% trans "Соңғы 14 күн" %}</option>
+                    <option value="30" {% if period_days == 30 %}selected{% endif %}>{% trans "Соңғы 30 күн" %}</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+             {% blocktrans with days=period_days %}Соңғы {{ days }} күндегі белсенділік{% endblocktrans %}
+        </div>
+        <div class="card-body">
+             {# --- ★★★ Диаграмма немесе хабарлама көрсету ★★★ --- #}
+             {% if has_activity %}
+                 <div style="position: relative; height:60vh; width:100%; max-width: 800px; margin: auto;">
+                    <canvas id="activityChart"></canvas>
+                </div>
+             {% else %}
+                <div class="alert alert-light text-center" role="alert">
+                    {% blocktrans with days=period_days %}Таңдалған {{ days }} күн ішінде бұл оқушының белсенділігі тіркелмеген.{% endblocktrans %}
+                </div>
+             {% endif %}
+             {# --- ★★★ --- #}
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_js %}
+    {# Chart.js кітапханасын қосу #}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+    <script>
+        {# --- ★★★ JavaScript жаңартылды ★★★ --- #}
+        const canvasElement = document.getElementById('activityChart');
+
+        // Егер canvas элементі және деректер бар болса ғана диаграмманы салу
+        if (canvasElement && {{ has_activity|yesno:"true,false" }}) {
+            const ctxActivity = canvasElement.getContext('2d');
+
+            try {
+                // View-дан келген JSON деректерін JavaScript массивіне/объектісіне айналдыру
+                const activityLabels = JSON.parse('{{ chart_labels_json|escapejs }}');
+                const activityDatasets = JSON.parse('{{ chart_datasets_json|escapejs }}');
+                const chartTitleText = '{{ chart_title|escapejs }}'; // Контексттен тақырыпты алу
+
+                 console.log("Chart Labels:", activityLabels); // Отладка
+                 console.log("Chart Datasets:", activityDatasets); // Отладка
+
+                const activityChart = new Chart(ctxActivity, {
+                    type: 'bar', // Бағандық диаграмма
+                    data: {
+                        labels: activityLabels,
+                        datasets: activityDatasets // View-дан дайын датасеттерді алу
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1 // Тек бүтін сандар
+                                }
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false, // Биіктігін контейнерге байланысты ету
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: chartTitleText // Контексттен алынған тақырып
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            legend: {
+                                 display: true,
+                                 position: 'top',
+                            }
+                        },
+                         interaction: {
+                            mode: 'index',
+                            intersect: false,
+                         },
+                         // stacked: false,
+                    }
+                });
+            } catch (e) {
+                 console.error("Error parsing chart data or creating chart:", e);
+                 // Қате болса, пайдаланушыға хабарлама көрсетуге болады
+                 canvasElement.parentElement.innerHTML = '<div class="alert alert-danger">Диаграмманы көрсету мүмкін болмады. Деректер қате болуы мүмкін.</div>';
+            }
+        } else if (!{{ has_activity|yesno:"true,false" }}) {
+             console.log("No activity data to display chart.");
+        } else {
+            console.error("Canvas element with ID 'activityChart' not found.");
+        }
+        {# --- ★★★ --- #}
+    </script>
+{% endblock %}

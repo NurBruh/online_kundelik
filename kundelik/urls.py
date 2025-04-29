@@ -37,7 +37,6 @@ urlpatterns = [
     path('teacher_schedule/', views.teacher_schedule, name='teacher_schedule'),
 
     # --- ЖАҢА МАРШРУТТАР: БЖБ/ТЖБ (ASSESSMENT) ---
-    # Мұғалімге арналған
     path('assessment/create/', views.create_assessment, name='create_assessment'),
     path('assessment/my/', views.list_assessments, name='list_assessments'),
     path('assessment/<int:pk>/edit/', views.edit_assessment, name='edit_assessment'),
@@ -49,4 +48,12 @@ urlpatterns = [
     path('assessment/<int:pk>/take/', views.take_assessment, name='take_assessment'), # Тапсырманы өту
     path('submission/<int:pk>/result/', views.view_submission_result, name='view_submission_result'), # Нәтижені көру
 
+    # --- ★★★ ЖАҢА URL: Оқушы Белсенділігі ★★★ ---
+    path('activity/select-student/', views.select_student_for_activity_view, name='select_student_for_activity'),
+    # Жаңа URL
+    path('student/<int:student_id>/activity/', views.view_student_activity, name='view_student_activity'),
+
+    # --- ★★★ URL соңы ★★★ ---
+    path('grade/daily/<int:pk>/edit/', views.edit_daily_grade, name='edit_daily_grade'),
+    path('grade/exam/<int:pk>/edit/', views.edit_exam_grade, name='edit_exam_grade'),
 ]
