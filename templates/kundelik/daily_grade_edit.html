@@ -1,0 +1,112 @@
+{% extends 'dashboard_base.html' %}
+{% load static i18n widget_tweaks %}
+
+{% block dashboard_title %}{% trans "Күнделікті бағаны өңдеу" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-label {
+        font-weight: 500;
+    }
+    /* Өрістерді disabled еткендегі стиль */
+    .form-control:disabled, .form-select:disabled {
+        background-color: #e9ecef; /* Сұр фон */
+        opacity: 0.7; /* Сәл мөлдірлеу */
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            {% blocktrans with student_name=grade.student.get_full_name subject_name=grade.subject.name grade_date=grade.date|date:"d.m.Y" %}
+                {{ student_name }} - {{ subject_name }} ({{ grade_date }}) бағасын өңдеу
+            {% endblocktrans %}
+        </h1>
+        {# Артқа қайту сілтемесі (баға қою бетіне, фильтрлерді сақтауға тырысамыз) #}
+        {% url 'add_daily_grade' as add_grade_url %}
+        {% if grade.student.userprofile.school_class %}
+            <a href="{{ add_grade_url }}?class_id={{ grade.student.userprofile.school_class.pk }}&subject_id={{ grade.subject.pk }}&date={{ grade.date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> {% trans "Артқа қайту" %}
+            </a>
+        {% else %}
+             {# Егер сынып белгісіз болса, параметрсіз қайту #}
+             <a href="{{ add_grade_url }}" class="btn btn-sm btn-outline-secondary">
+                 <i class="fas fa-arrow-left me-1"></i> {% trans "Артқа қайту" %}
+             </a>
+        {% endif %}
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">{% trans "Бағаны өңдеу формасы" %}</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="row">
+                    {# --- Өңделмейтін өрістерді көрсету --- #}
+                    <div class="col-md-6 mb-3">
+                         <label class="form-label">{% trans "Оқушы:" %}</label>
+                         {# 'student' өрісі формада disabled, бірақ мәнін grade-тан аламыз #}
+                         <input type="text" class="form-control form-control-sm" value="{{ grade.student.get_full_name|default:grade.student.username }}" disabled>
+                    </div>
+                     <div class="col-md-6 mb-3">
+                         <label class="form-label">{% trans "Пән:" %}</label>
+                         {# 'subject' өрісі формада disabled, бірақ мәнін grade-тан аламыз #}
+                         <input type="text" class="form-control form-control-sm" value="{{ grade.subject.name }}" disabled>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                         <label class="form-label">{% trans "Күні:" %}</label>
+                         {# 'date' өрісі формада disabled, бірақ мәнін grade-тан аламыз #}
+                         <input type="date" class="form-control form-control-sm" value="{{ grade.date|date:'Y-m-d' }}" disabled>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                         <label class="form-label">{% trans "Тоқсан:" %}</label>
+                         {# 'term' өрісі формада жоқ, мәнін grade-тан аламыз #}
+                         <input type="text" class="form-control form-control-sm" value="{{ grade.term }}" disabled>
+                    </div>
+
+                    {# --- Өңделетін өрістер --- #}
+                    {# Баға өрісі #}
+                    <div class="col-md-6 mb-3">
+                         <label for="{{ form.grade.id_for_label }}" class="form-label">
+                             {{ form.grade.label }}{% if form.grade.field.required %}<span class="text-danger">*</span>{% endif %}
+                         </label>
+                         {% render_field form.grade class+="form-control form-control-sm" %}
+                         {% if form.grade.errors %}<div class="invalid-feedback d-block">{{ form.grade.errors|striptags }}</div>{% endif %}
+                    </div>
+                     {# Комментарий өрісі (бүкіл еніне) #}
+                    <div class="col-md-12 mb-3">
+                         <label for="{{ form.comment.id_for_label }}" class="form-label">{{ form.comment.label }}</label>
+                         {% render_field form.comment class+="form-control form-control-sm" %}
+                         {% if form.comment.errors %}<div class="invalid-feedback d-block">{{ form.comment.errors|striptags }}</div>{% endif %}
+                    </div>
+
+                     {# Жасырын өрістерді (формада бар болса, мысалы 'teacher') шығару #}
+                     {% for field in form %}{% if field.is_hidden %}{{ field }}{% endif %}{% endfor %}
+                </div>
+
+                <hr>
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-save me-1"></i> {% trans "Сақтау" %}
+                    </button>
+                    {# Артқа қайту сілтемесінің екінші нұсқасы (Болдырмау) #}
+                    {% if grade.student.userprofile.school_class %}
+                        <a href="{{ add_grade_url }}?class_id={{ grade.student.userprofile.school_class.pk }}&subject_id={{ grade.subject.pk }}&date={{ grade.date|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm">{% trans "Болдырмау" %}</a>
+                    {% else %}
+                         <a href="{{ add_grade_url }}" class="btn btn-outline-secondary btn-sm">{% trans "Болдырмау" %}</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

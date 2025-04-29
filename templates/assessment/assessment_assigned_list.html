@@ -46,9 +46,8 @@
                                 <td>
                                     {% if assessment.pk in submitted_ids %}
                                         {# Тапсырылған болса, нәтижені көру #}
-                                        {# Submission ID-сын табу керек, бұл күрделірек #}
-                                        {# Пока просто ссылка на список #}
-                                        <a href="{% url 'view_submission_result' pk=assessment.pk %}" class="btn btn-sm btn-outline-info"> {# Бұл жерде submission pk керек #}
+                                        {# Submission ID-сын табу керек, бұл күрделірек, сіздің 'view_submission_result' url-ыңыз assessment.pk қабылдайтын болса, дұрыс #}
+                                        <a href="{% url 'view_submission_result' pk=assessment.pk %}" class="btn btn-sm btn-outline-info">
                                              <i class="fas fa-eye me-1"></i> {% trans "Нәтиже" %}
                                         </a>
                                     {% else %}
@@ -68,9 +67,22 @@
                     </table>
                 </div>
             {% else %}
-                <div class="alert alert-light text-center m-4">
-                    {% trans "Сізге әлі БЖБ/ТЖБ тағайындалмады." %}
-                </div>
+                {# --- ОСЫ ЖЕРДЕ ӨЗГЕРІС --- #}
+                <div class="text-center py-5 my-4 mx-auto" style="max-width: 600px;"> {# mx-auto ортаға келтіреді, max-width шектейді #}
+                     <img src="{% static 'image/homework.png' %}" {# Иллюстрацияңыздың жолын көрсетіңіз, мысалы, басқа сурет #}
+                          alt="{% trans 'Тапсырмалар жоқ' %}"
+                          style="max-width: 220px; max-height: 180px; opacity: 0.7; margin-bottom: 1.5rem;"
+                          onerror="this.style.display='none'; document.getElementById('empty-assignments-fallback-icon').style.display='block';"
+                          loading="lazy">
+                     <div id="empty-assignments-fallback-icon" style="display:none;">
+                         <i class="fas fa-file-alt fa-4x text-muted my-3" style="opacity: 0.5;"></i> {# Иконканы өзгертуге болады #}
+                     </div>
+                     <h5 class="text-muted fw-light mt-3">{% trans "Тағайындалған БЖБ/ТЖБ жоқ" %}</h5>
+                     <p class="text-muted small">{% trans "Сізге әзірге ешқандай бақылау жұмыстары тағайындалмаған сияқты. Жаңа тапсырмалар пайда болғанда, олар осында көрсетіледі." %}</p>
+                     {# Мүмкін, басты бетке немесе басқа бөлімге сілтеме қосуға болады #}
+                     {# <a href="{% url 'dashboard_schedule' %}" class="btn btn-outline-primary mt-3">{% trans "Кестеге оралу" %}</a> #}
+                 </div>
+                {# --- ӨЗГЕРІС АЯҚТАЛДЫ --- #}
             {% endif %}
         </div>
     </div>

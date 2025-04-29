@@ -1,10 +1,10 @@
-{% extends 'dashboard_base.html' %} {# Наследуемся от базового шаблона дашборда #}
+{% extends 'dashboard_base.html' %} {# Негізгі дашборд шаблонынан мұра аламыз #}
 {% load static i18n %}
 
-{# --- Переопределяем заголовок страницы --- #}
+{# --- Беттің тақырыбын қайта анықтаймыз --- #}
 {% block dashboard_title %}SmartOqulyq - {% trans "Сабақ кестесі" %}{% endblock %}
 
-{# --- Переопределяем основной контент дашборда --- #}
+{# --- Дашбордтың негізгі мазмұнын қайта анықтаймыз --- #}
 {% block dashboard_content %}
 
     <h1 class="page-title">{% trans "Сабақ кестесі" %}</h1>
@@ -49,9 +49,7 @@
                                 <thead>
                                     <tr>
                                         <th scope="col" class="text-center" style="width: 5%;">№</th>
-                                        {# --- УАҚЫТ БАҒАНЫ ҚОСЫЛДЫ --- #}
                                         <th scope="col" class="text-center" style="width: 10%;">{% trans "Уақыт" %}</th>
-                                        {# --- Басқа бағандардың ені аздап өзгеруі мүмкін --- #}
                                         <th scope="col" style="width: 30%;">{% trans "Пән" %} / {% trans "Сынып" %} / {% trans "Тақырып" %}</th>
                                         <th scope="col" style="width: 30%;">{% trans "Үй тапсырмасы" %}</th>
                                         {% if display_role != 'teacher' %}
@@ -60,22 +58,18 @@
                                         <th scope="col" class="text-center" style="width: 5%;">{% trans "Каб." %}</th>
                                         <th scope="col" class="text-center" style="width: 5%;">{% trans "Статус" %}</th>
                                         {% if request.user.role == 'teacher' or request.user.role == 'admin' or request.user.role == 'director' %}
-                                        <th scope="col" class="text-center" style="width: 5%;">{% trans "Баға қою" %}</th> {# Ені азайтылды #}
+                                        <th scope="col" class="text-center" style="width: 5%;">{% trans "Баға қою" %}</th>
                                         {% endif %}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for lesson in daily_schedules %}
                                     <tr>
-                                        {# Сабақ нөмірі #}
                                         <td class="text-center align-middle">{{ lesson.lesson_number|default:"-" }}</td>
-                                        {# --- УАҚЫТ КӨРСЕТУ ҚОСЫЛДЫ --- #}
                                         <td class="text-center align-middle small">
                                             {{ lesson.time_start|time:"H:i"|default:"-" }}
                                             {% if lesson.time_end %}<br>{{ lesson.time_end|time:"H:i" }}{% endif %}
                                         </td>
-                                        {# --- --- #}
-                                        {# Пән / Сынып / Тақырып #}
                                         <td class="align-middle">
                                             <span class="fw-medium">{{ lesson.subject.name|default:"Пән белгісіз" }}</span>
                                             {% if display_role == 'teacher' or display_role == 'admin' or display_role == 'director' %}
@@ -85,9 +79,7 @@
                                             {% endif %}
                                             {% if lesson.topic %}<br><small class="text-muted fst-italic">{{ lesson.topic }}</small>{% endif %}
                                         </td>
-                                        {# Үй тапсырмасы #}
                                         <td class="align-middle small">{{ lesson.task|default:"-"|linebreaksbr }}</td>
-                                        {# Мұғалім (тек мұғалім еместерге) #}
                                         {% if display_role != 'teacher' %}
                                             <td class="small text-muted align-middle">
                                                 {% if lesson.teacher %}
@@ -97,9 +89,7 @@
                                                 {% endif %}
                                             </td>
                                         {% endif %}
-                                        {# Кабинет #}
                                         <td class="text-center align-middle small text-muted">{{ lesson.room|default:"-" }}</td>
-                                        {# Статус #}
                                         <td class="text-center align-middle">
                                             {% with status_display=lesson.get_status_display|default:lesson.status|default:"-" %}
                                                 {% if lesson.status == 'completed' or lesson.status == 'checked' %}<span class="text-success" title="{{ status_display }}"><i class="fas fa-check-circle"></i></span>
@@ -108,7 +98,6 @@
                                                 {% else %}<span class="text-secondary" title="{{ status_display }}"><i class="far fa-question-circle"></i></span>{% endif %}
                                             {% endwith %}
                                         </td>
-                                        {# Баға қою әрекеттері (тек мұғалім/админ/директорларға) #}
                                         {% if request.user.role == 'teacher' or request.user.role == 'admin' or request.user.role == 'director' %}
                                         <td class="text-center align-middle">
                                             {% if request.user == lesson.teacher or request.user.role == 'admin' or request.user.role == 'director' %}
@@ -128,12 +117,34 @@
                         {# Егер күнге сабақ болмаса #}
                         <p class="text-muted ps-3">{% trans "Бұл күнге сабақ жоқ." %}</p>
                     {% endif %} {# daily_schedules шартының соңы #}
-                {% empty %} {# Егер schedules_by_date бос болса (бүкіл аптаға) #}
-                    <div class="alert alert-light text-center mt-4">{% trans "Таңдалған кезеңге сабақ кестесі табылмады." %}</div>
+                {% empty %} {# Егер schedules_by_date бос болса (бүкіл аптаға) - ОСЫ ЖЕРДЕ ӨЗГЕРІС #}
+                    <div class="text-center py-5 mt-4 mb-3">
+                         <img src="{% static 'image/empty_space_illustration.svg' %}" {# Иллюстрацияңыздың жолын көрсетіңіз #}
+                              alt="{% trans 'Бұл жерде әзірге ештеңе жоқ' %}"
+                              style="max-width: 200px; max-height: 150px; opacity: 0.65; margin-bottom: 1rem;"
+                              onerror="this.style.display='none'; document.getElementById('empty-schedule-fallback-icon').style.display='block';"
+                              loading="lazy">
+                         <div id="empty-schedule-fallback-icon" style="display:none;">
+                             <i class="fas fa-calendar-times fa-4x text-muted my-3" style="opacity: 0.5;"></i> {# Иконканы өзгертуге болады #}
+                         </div>
+                         <h5 class="text-muted fw-light mt-3">{% trans "Сабақ кестесі әзірге бос" %}</h5>
+                         <p class="text-muted small">{% trans "Таңдалған кезеңге сабақтар табылған жоқ немесе әлі енгізілмеген." %}</p>
+                     </div>
                 {% endfor %} {# schedules_by_date.items циклінің соңы #}
             {% else %}
-                 {# Егер schedules_by_date мүлдем болмаса #}
-                 <div class="alert alert-light text-center mt-4">{% trans "Таңдалған кезеңге сабақ кестесі табылмады." %}</div>
+                 {# Егер schedules_by_date мүлдем болмаса - ОСЫ ЖЕРДЕ ӨЗГЕРІС #}
+                 <div class="text-center py-5 mt-4 mb-3">
+                     <img src="{% static 'image/calendar-512.png' %}" {# Иллюстрацияңыздың жолын көрсетіңіз #}
+                          alt="{% trans 'Бұл жерде әзірге ештеңе жоқ' %}"
+                          style="max-width: 200px; max-height: 150px; opacity: 0.65; margin-bottom: 1rem;"
+                          onerror="this.style.display='none'; document.getElementById('empty-schedule-fallback-icon-alt').style.display='block';"
+                          loading="lazy">
+                     <div id="empty-schedule-fallback-icon-alt" style="display:none;">
+                         <i class="fas fa-calendar-alt fa-4x text-muted my-3" style="opacity: 0.5;"></i> {# Иконканы өзгертуге болады #}
+                     </div>
+                     <h5 class="text-muted fw-light mt-3">{% trans "Кесте табылмады" %}</h5>
+                     <p class="text-muted small">{% trans "Таңдалған уақыт аралығына сабақ кестесі әлі құрылмаған сияқты." %}</p>
+                 </div>
             {% endif %} {# schedules_by_date шартының соңы #}
         </div> {# card-body соңы #}
     </div> {# card соңы #}

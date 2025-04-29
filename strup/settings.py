@@ -6,45 +6,37 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --- ҚОЛДАНУШЫ МОДЕЛІ ---
+# ҚОЛДАНУШЫ МОДЕЛІ
 AUTH_USER_MODEL = 'kundelik.User'
 
-# SECURITY WARNING: keep the secret key used in production secret!
-# Жақсырақ, бұл кілтті қоршаған орта айнымалысынан алу керек
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-%@t#eom+=036p0@0=wu)-zlgs%z39_x#m91(j&odr$%mm)nm48') # Әдепкі мән қалдырылды
+# ҚҰПИЯ КІЛТ (PRODUCTION ҮШІН ҚОРШАҒАН ОРТА АЙНЫМАЛЫСЫНАН АЛЫҢЫЗ)
+SECRET_KEY = 'django-insecure-%@t#eom+=036p0@0=wu)-zlgs%z39_x#m91(j&odr$%mm)nm48'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# Хостингте DEBUG = False болуы керек. Алайда, қазіргі қатені жөндеу үшін True қалдыруға болады.
-# Production-ға шығарғанда False деп өзгертіңіз!
-DEBUG = True # Production үшін False деп өзгертіңіз
+# DEBUG РЕЖИМІ (PRODUCTION ҮШІН FALSE)
+DEBUG = True
 
-# --- ★★★ Хостинг үшін МАҢЫЗДЫ өзгерістер ★★★ ---
 ALLOWED_HOSTS = [
     'kundelik.whispr.ru',
-    'www.kundelik.whispr.ru', # Егер www нұсқасы қолданылса
+    'www.kundelik.whispr.ru',
     '127.0.0.1',
     'localhost',
-    # Басқа қажетті хосттарды осында қосыңыз (мысалы, IP адрес)
 ]
 
-# CSRF үшін сенімді домендер
 CSRF_TRUSTED_ORIGINS = [
     'https://kundelik.whispr.ru',
-    'https://www.kundelik.whispr.ru', # Егер www нұсқасы қолданылса
+    'https://www.kundelik.whispr.ru',
+    'http://127.0.0.1:8000', # Әзірлеу үшін HTTP
+    'http://localhost:8000', # Әзірлеу үшін HTTP
 ]
 
-# HTTPS үшін параметрлер (егер сайт https арқылы жұмыс істесе)
-# Production-да бұлардың True болғаны өте маңызды!
-CSRF_COOKIE_SECURE = True # Production үшін True
-SESSION_COOKIE_SECURE = True # Production үшін True
-# SECURE_SSL_REDIRECT = True # Веб-сервер бағыттамаса ғана True
-# SECURE_HSTS_SECONDS = 31536000 # Бір жыл (optional)
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True # (optional)
-# SECURE_HSTS_PRELOAD = True # (optional)
-# --- ★★★ Өзгерістер соңы ★★★ ---
-
-
-# Application definition
+# HTTPS үшін параметрлер (DEBUG=False болғанда ғана іске қосылады)
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    # ... басқа SECURE_ параметрлері
+else:
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -53,14 +45,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Сіздің қосымшаларыңыз:
     'kundelik',
-    # Басқа қосымшалар:
     'widget_tweaks',
-    # --- CKEDITOR ҚОСЫМШАЛАРЫ ---
-    'ckeditor',             # Негізгі CKEditor қосымшасы
-    'ckeditor_uploader',    # Файлдарды (суреттерді) жүктеуге арналған
-    # --- ---
+    'ckeditor',
+    'ckeditor_uploader',
 ]
 
 MIDDLEWARE = [
@@ -73,13 +61,20 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'strup.urls' # Жобаңыздың негізгі urls.py файлының атын тексеріңіз
+ROOT_URLCONF = 'strup.urls'
 
+# ==============================================================================
+# ШАБЛОНДАР (TEMPLATES) - ОСЫ БӨЛІК МАҢЫЗДЫ
+# ==============================================================================
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
+        # Django-ға шаблон файлдарын іздейтін негізгі директориялар:
+        'DIRS': [
+            BASE_DIR / 'templates', # 1. Жобаның негізгі templates папкасы
+        ],
+        # Қосымшалардың ішіндегі 'templates' папкаларын да іздеу:
+        'APP_DIRS': True,        # 2. Мысалы, kundelik/templates/
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -90,13 +85,11 @@ TEMPLATES = [
         },
     },
 ]
+# ==============================================================================
 
-WSGI_APPLICATION = 'strup.wsgi.application' # Жобаңыздың wsgi.py файлының атын тексеріңіз
+WSGI_APPLICATION = 'strup.wsgi.application'
 
-
-# Database
-# Дерекқор баптауларыңыз дұрыс екеніне көз жеткізіңіз
-DATABASES = {
+DATABASES = { # Сіздің дерекқор баптауларыңыз
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'defaultdb',
@@ -111,8 +104,6 @@ DATABASES = {
     }
 }
 
-
-# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
@@ -120,94 +111,53 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
 ]
 
-
-# Internationalization
-LANGUAGE_CODE = 'kk' # Немесе 'ru', 'en-us'
+LANGUAGE_CODE = 'kk'
 TIME_ZONE = 'Asia/Almaty'
 USE_I18N = True
+USE_L10N = True
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/' # Басында және соңында '/' болуы маңызды
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [ BASE_DIR / 'static', ]
-# Production-да статикалық файлдарды жинау үшін STATIC_ROOT қажет болады
-# STATIC_ROOT = BASE_DIR / 'staticfiles_collected'
+STATIC_ROOT = BASE_DIR / 'staticfiles_collected' # Production үшін
 
-# --- МЕДИА ФАЙЛДАР ---
-MEDIA_URL = '/media/' # Басында және соңында '/' болуы маңызды
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-# --- ---
 
-# Пайдаланушы кірмегенде қай URL-ға бағытталатыны
 LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
-# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ============================================
-# --- CKEDITOR БАПТАУЛАРЫ ---
-# ============================================
-
-# CKEditor арқылы жүктелген файлдар MEDIA_ROOT ішіндегі осы папкаға салынады
 CKEDITOR_UPLOAD_PATH = "uploads/"
-
-# Суреттерді өңдеуге арналған бэкендтер (мысалы, thumbnail жасау үшін)
-# Pillow орнатылған болуы керек (pip install Pillow)
-# CKEDITOR_IMAGE_BACKEND = 'pillow' # Қажет болса қосыңыз
-
-# CKEditor конфигурациялары (қалауыңызша өзгертуге болады)
-CKEDITOR_CONFIGS = {
+CKEDITOR_IMAGE_BACKEND = 'pillow'
+CKEDITOR_ALLOW_NONIMAGE_FILES = False
+CKEDITOR_CONFIGS = { # Сіздің CKEditor конфигурацияңыз
     'default': {
-        'skin': 'moono-lisa', # Редактордың сыртқы көрінісі
-        # 'skin': 'office2013',
-        'toolbar_Basic': [
-            ['Source', '-', 'Bold', 'Italic']
-        ],
+        'skin': 'moono-lisa',
         'toolbar_YourCustomToolbarConfig': [
-            {'name': 'document', 'items': ['Source', '-', 'Save', 'NewPage', 'Preview', 'Print', '-', 'Templates']},
+            {'name': 'document', 'items': ['Source', '-', 'Templates']},
             {'name': 'clipboard', 'items': ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', '-', 'Undo', 'Redo']},
             {'name': 'editing', 'items': ['Find', 'Replace', '-', 'SelectAll']},
-            {'name': 'forms', 'items': ['Form', 'Checkbox', 'Radio', 'TextField', 'Textarea', 'Select', 'Button', 'ImageButton', 'HiddenField']},
-            '/', # Жаңа қатар
+            '/',
             {'name': 'basicstyles', 'items': ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript', '-', 'RemoveFormat']},
-            {'name': 'paragraph', 'items': ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', 'CreateDiv', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', '-', 'BidiLtr', 'BidiRtl', 'Language']},
+            {'name': 'paragraph', 'items': ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', 'CreateDiv', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock']},
             {'name': 'links', 'items': ['Link', 'Unlink', 'Anchor']},
-            # Сурет жүктеу батырмасы ('Image' плагині)
-            {'name': 'insert', 'items': ['Image', 'Flash', 'Table', 'HorizontalRule', 'Smiley', 'SpecialChar', 'PageBreak', 'Iframe']},
-            '/', # Жаңа қатар
+            {'name': 'insert', 'items': ['Image', 'Table', 'HorizontalRule', 'Smiley', 'SpecialChar']},
+            '/',
             {'name': 'styles', 'items': ['Styles', 'Format', 'Font', 'FontSize']},
             {'name': 'colors', 'items': ['TextColor', 'BGColor']},
             {'name': 'tools', 'items': ['Maximize', 'ShowBlocks']}
-            # {'name': 'about', 'items': ['About']}
         ],
-        'toolbar': 'YourCustomToolbarConfig',  # Жоғарыда анықталған toolbar-ды қолдану
-        # 'toolbar': 'full', # Барлық батырмаларды көрсету
-        # 'height': 291,
-        # 'width': '100%', # Автоматты ен
-        # 'filebrowserWindowWidth': 940,
-        # 'filebrowserWindowHeight': 725,
-        # Файл жүктеу URL-дарын қосу (ckeditor_uploader арқылы)
-         'filebrowserUploadUrl': "/ckeditor/upload/",
-         'filebrowserBrowseUrl': "/ckeditor/browse/",
-        # Қосымша плагиндер (қажет болса)
+        'toolbar': 'YourCustomToolbarConfig',
+        'width': '100%',
+        'filebrowserUploadUrl': "/ckeditor/upload/",
+        'filebrowserBrowseUrl': "/ckeditor/browse/",
         'extraPlugins': ','.join([
-            'uploadimage', # Суретті базаға жүктеу үшін
-            'div',
-            'autolink',
-            'autoembed',
-            'embedsemantic',
-            'autogrow',
-            # 'devtools',
-            'widget',
-            'lineutils',
-            'clipboard',
-            'dialog',
-            'dialogui',
-            'elementspath'
+            'uploadimage', 'div', 'autolink', 'autoembed', 'embedsemantic',
+            'autogrow', 'widget', 'lineutils', 'clipboard', 'dialog',
+            'dialogui', 'elementspath'
         ]),
     }
 }
-
-# ============================================

@@ -1,7 +1,77 @@
 {% extends 'dashboard_base.html' %}
 {% load static i18n %}
 
-{% block dashboard_title %}{% trans "Бағалар" %}{% endblock %} {# <-- ОДИН РАЗ #}
+{% block dashboard_title %}{% trans "Бағалар" %}{% endblock %}
+
+{% block extra_css %}
+{# Стили для оценок #}
+<style>
+    .page-title { /* Стили для заголовка страницы */
+        font-size: 1.75rem;
+        font-weight: 700;
+    }
+    .grade-table th {
+        text-align: center;
+        vertical-align: middle;
+        background-color: #f8f9fc;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .grade-table td {
+        vertical-align: middle;
+    }
+    .daily-grades-cell {
+        line-height: 1.2; /* Для лучшего отображения оценок с датами */
+        min-width: 200px; /* Минимальная ширина, чтобы оценки не сильно сжимались */
+    }
+    .grade-badge {
+        display: inline-flex; /* Используем flex для центрирования */
+        flex-direction: column; /* Располагаем дату под оценкой */
+        align-items: center; /* Центрируем по горизонтали */
+        justify-content: center; /* Центрируем по вертикали */
+        min-width: 38px; /* Фиксированная ширина */
+        min-height: 38px; /* Фиксированная высота */
+        padding: 0.2em;
+        margin: 0.15em;
+        font-size: 1rem; /* Размер основного текста (оценки) */
+        font-weight: 700;
+        line-height: 1;
+        color: #fff;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.375rem;
+        cursor: default; /* Убираем курсор-руку, если нет title */
+    }
+    .grade-date-subtext {
+        font-size: 0.6rem; /* Уменьшаем шрифт даты */
+        font-weight: 400;
+        display: block;
+        margin-top: 1px;
+        color: inherit;
+        opacity: 0.85;
+    }
+    .grade-5 { background-color: #1cc88a; } /* Зеленый */
+    .grade-4 { background-color: #4e73df; } /* Синий */
+    .grade-3 { background-color: #f6c23e; color: #5a5c69 !important; } /* Желтый (темный текст) */
+    .grade-2 { background-color: #e74a3b; } /* Красный */
+    .grade-1 { background-color: #e74a3b; } /* Красный (для 1) */
+    .grade-default { background-color: #858796; } /* Серый */
+
+    .term-grade {
+        font-size: 1.25rem; /* Увеличиваем шрифт итоговой оценки */
+        font-weight: 700;
+    }
+    /* Цвета для итоговых оценок */
+    .term-grade-5 { color: #1cc88a !important; }
+    .term-grade-4 { color: #4e73df !important; }
+    .term-grade-3 { color: #f6c23e !important; }
+    .term-grade-2 { color: #e74a3b !important; }
+    .term-grade-1 { color: #e74a3b !important; }
+
+</style>
+{% endblock %}
+
 
 {% block dashboard_content %}
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
@@ -12,14 +82,16 @@
             {% endif %}
         </h1>
 
-        {# --- БЛОК ВЫБОРА ЧЕТВЕРТИ --- #}
+     {# --- БЛОК ВЫБОРА ЧЕТВЕРТИ (ИСПРАВЛЕННЫЙ) --- #}
         {% if available_terms %}
         <div class="d-flex align-items-center">
             <label for="termSelect" class="form-label me-2 mb-0 fw-normal">{% trans "Тоқсан:" %}</label>
             <select class="form-select form-select-sm w-auto" id="termSelect" onchange="if(this.value) window.location.href=this.value;">
+                {# Генерируем базовый URL для этой страницы #}
                 {% url 'dashboard_grades' as base_grades_url %}
                 {% for term_num in available_terms %}
-                    <option value="{{ request.path }}?term={{ term_num }}" {% if term_num == current_term %}selected{% endif %}>
+                    {# Создаем URL только с параметром term #}
+                    <option value="{{ base_grades_url }}?term={{ term_num }}" {% if term_num == current_term %}selected{% endif %}>
                         {{ term_num }}-{% trans "тоқсан" %}
                     </option>
                 {% endfor %}
@@ -43,31 +115,36 @@
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover grade-table">
-                    <thead>
+                    <thead class="table-light">
                         <tr>
                             <th style="width: 5%;">№</th>
-                            <th style="width: 25%;">{% trans "Пән" %}</th>
+                            <th style="width: 20%;">{% trans "Пән" %}</th>
                             <th>{% trans "Күнделікті бағалар" %} <small class="text-muted fw-normal">({% trans "баға/күн" %})</small></th>
-                            <th class="text-center" style="width: 10%;">{% trans "БЖБ" %}</th>
+                            {# --- Изменены заголовки СОР --- #}
+                            <th class="text-center" style="width: 10%;">{% trans "БЖБ 1" %}</th>
+                            <th class="text-center" style="width: 10%;">{% trans "БЖБ 2" %}</th>
+                            {# --- --- #}
                             <th class="text-center" style="width: 10%;">{% trans "ТЖБ" %}</th>
                             <th class="text-center" style="width: 10%;">{% trans "Тоқсан" %}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for grade_info in subject_grades %}
+                        {% for grade_info in subject_grades %} {# Используем subject_grades из контекста #}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
+                            <td class="text-center">{{ forloop.counter }}</td>
                             <td class="text-start align-middle">{{ grade_info.subject_name }}</td>
                             <td class="align-middle daily-grades-cell">
                                 {% for grade_data in grade_info.daily_grades_list %}
                                     <span class="grade-badge
                                         {% with grade_val=grade_data.grade %}
-                                        {% if grade_val == 5 %} grade-5
-                                        {% elif grade_val == 4 %} grade-4
-                                        {% elif grade_val == 3 %} grade-3
-                                        {% elif grade_val == 2 %} grade-2
-                                        {% else %} grade-default {% endif %}
+                                            {% if grade_val == 5 %} grade-5
+                                            {% elif grade_val == 4 %} grade-4
+                                            {% elif grade_val == 3 %} grade-3
+                                            {% elif grade_val == 2 %} grade-2
+                                            {% elif grade_val == 1 %} grade-1 {# Добавляем для 1 #}
+                                            {% else %} grade-default {% endif %}
                                         {% endwith %}"
+                                        {# Добавляем комментарий во всплывающую подсказку #}
                                         title="{{ grade_data.date|date:'d.m.Y' }}{% if grade_data.comment %}: {{ grade_data.comment }}{% endif %}">
                                         {{ grade_data.grade }}
                                         <div class="grade-date-subtext">{{ grade_data.date|date:'d.m' }}</div>
@@ -76,26 +153,46 @@
                                     <span class="text-muted">-</span>
                                 {% endfor %}
                             </td>
-                            <td class="text-center align-middle" title="{% if grade_info.sor_max_grade %}{% trans 'Макс:' %} {{ grade_info.sor_max_grade }}{% endif %}{% if grade_info.sor_comment %}. {{ grade_info.sor_comment }}{% endif %}">
-                                {{ grade_info.sor_grade|default:"-" }}
-                            </td>
-                             <td class="text-center align-middle" title="{% if grade_info.soch_max_grade %}{% trans 'Макс:' %} {{ grade_info.soch_max_grade }}{% endif %}{% if grade_info.soch_comment %}. {{ grade_info.soch_comment }}{% endif %}">
-                                {{ grade_info.soch_grade|default:"-" }}
-                            </td>
-                            <td class="text-center align-middle fw-bold fs-5
-                                {% with final_grade=grade_info.term_grade %}
-                                {% if final_grade == 5 %} text-success
-                                {% elif final_grade == 4 %} text-warning
-                                {% elif final_grade == 3 %} text-danger
-                                {% elif final_grade == 2 %} text-secondary
+                             {# --- Отображение СОР1 --- #}
+                            <td class="text-center align-middle">
+                                {% if grade_info.sor1_grade is not None %}
+                                    {{ grade_info.sor1_grade }}/{{ grade_info.sor1_max_grade|default:"?" }}
+                                {% else %}
+                                    -
                                 {% endif %}
+                            </td>
+                             {# --- Отображение СОР2 --- #}
+                            <td class="text-center align-middle">
+                                {% if grade_info.sor2_grade is not None %}
+                                    {{ grade_info.sor2_grade }}/{{ grade_info.sor2_max_grade|default:"?" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                             {# --- Отображение СОЧ --- #}
+                             <td class="text-center align-middle">
+                                {% if grade_info.soch_grade is not None %}
+                                    {{ grade_info.soch_grade }}/{{ grade_info.soch_max_grade|default:"?" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            {# --- Отображение итоговой оценки за токсан --- #}
+                            <td class="text-center align-middle term-grade
+                                {% with final_grade=grade_info.term_grade %}
+                                    {% if final_grade == 5 %} term-grade-5
+                                    {% elif final_grade == 4 %} term-grade-4
+                                    {% elif final_grade == 3 %} term-grade-3
+                                    {% elif final_grade == 2 %} term-grade-2
+                                    {% elif final_grade == 1 %} term-grade-1
+                                    {% endif %}
                                 {% endwith %}">
                                 {{ grade_info.term_grade|default:"-" }}
                             </td>
                         </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="7" class="text-center text-muted py-4"> {# Увеличиваем colspan до 7 #}
                                      {% if current_term %}
                                          {% trans "Таңдалған тоқсанға бағалар әлі енгізілмеген." %}
                                      {% else %}
@@ -109,19 +206,5 @@
             </div>
         </div>
     </div>
-    {# Стили теперь в dashboard_base.html, но можно оставить специфичные здесь в extra_css #}
-{% endblock %}
 
-{% block extra_css %}
-{# Стили для оценок можно оставить здесь или перенести в dashboard_base.html #}
-<style>
-    .grade-badge { display: inline-block; min-width: 40px; padding: 0.3em 0.5em; margin: 0.15em; font-size: 0.9rem; font-weight: 600; line-height: 1; color: #fff; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: 0.375rem; position: relative; }
-    .grade-date-subtext { font-size: 0.65rem; font-weight: 400; display: block; margin-top: 2px; color: inherit; opacity: 0.8; }
-    .grade-5 { background-color: #1cc88a; }
-    .grade-4 { background-color: #f6c23e; color: #5a5c69 !important;}
-    .grade-3 { background-color: #e74a3b; }
-    .grade-2 { background-color: #858796; }
-    .grade-default { background-color: #5a5c69; }
-    .daily-grades-cell { line-height: 1.2; }
-</style>
 {% endblock %}
