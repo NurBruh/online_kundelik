@@ -14,54 +14,212 @@
 
     <!-- Ваши кастомные стили -->
     <style>
-        body.body-with-bg {
-            background-image: url("{% static 'image/BG-image.jpg' %}"); /* Используем static */
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            padding-top: 70px; /* Увеличил отступ под навбар */
-        }
-        .content-section-transparent {
-            background-color: rgba(255, 255, 255, 0.9);
-            padding-top: 4rem;
-            padding-bottom: 4rem;
-        }
-        .about-section {
-            background-color: #e7f1ff;
-            padding-top: 2.5rem;
-            padding-bottom: 2.5rem;
-        }
-        .cta-section {
-            background-color: #0a2a66;
-            color: white;
-            padding-top: 4rem;
-            padding-bottom: 4rem;
-        }
-        .service-card-img {
-            height: 200px;
-            object-fit: cover;
-        }
-        .navbar-nav .nav-link {
-            text-decoration: none;
-        }
-        .navbar-brand:hover,
-        .navbar-nav .nav-link:hover {
-             color: var(--bs-primary) !important;
-        }
-        /* Стили для выпадающего меню пользователя */
-        .dropdown-menu {
-            min-width: auto; /* Чтобы меню не было слишком широким */
-        }
+    /* Негізгі бет және html стилі */
+    html {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden; /* Горизонтальды скроллды болдырмау */
+    }
 
-    </style>
+    body.body-with-bg {
+        background-image: url("{% static 'image/BG-image.jpg' %}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+
+        min-height: 100%; /* Минималды биіктікті экранға теңестіру */
+        margin: 0; /* Браузердің әдепкі margin-ін алып тастау */
+        padding-top: 70px; /* Навбар биіктігіне сәйкес */
+        padding-bottom: 100px; /* Футер мен чат батырмасы үшін төменгі бос орын (реттеуге болады) */
+        box-sizing: border-box; /* padding пен border элементтің жалпы өлшеміне кірмейді */
+
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Негізгі контентті орайтын контейнер (HTML-ге қосу керек болуы мүмкін) */
+    /* Егер сіз барлық секцияларды (nav пен footer-ден басқа) осы класпен div-ке орасаңыз,
+       бұл футерді әрдайым төменге "итереді" */
+    .main-content-wrapper {
+        flex-grow: 1; /* Қол жетімді барлық бос орынды алады */
+    }
+
+    /* Секциялардың жалпы стильдері */
+    .content-section-transparent {
+        background-color: rgba(255, 255, 255, 0.9);
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+    }
+    .about-section {
+        background-color: #e7f1ff;
+        padding-top: 2.5rem;
+        padding-bottom: 2.5rem;
+    }
+    .cta-section {
+        background-color: #0a2a66;
+        color: white;
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+    }
+    .service-card-img {
+        height: 200px;
+        object-fit: cover;
+    }
+
+    /* Навигация панелінің стильдері */
+    .navbar-nav .nav-link {
+        text-decoration: none;
+    }
+    .navbar-brand:hover,
+    .navbar-nav .nav-link:hover {
+         color: var(--bs-primary) !important;
+    }
+    .dropdown-menu {
+        min-width: auto;
+    }
+
+    /* Футер стилі */
+    footer.bg-light { /* Класс сіздің футеріңізге сәйкес келуі керек */
+        /* Егер body flex және main-content-wrapper flex-grow:1 болса, бұл қажет емес: margin-top: auto; */
+        width: 100%;
+        flex-shrink: 0; /* Футердің қысылмауын қамтамасыз етеді */
+    }
+
+
+    /* Стили для чат-бота */
+    .chat-widget-button {
+        position: fixed;
+        bottom: 30px; /* Футер мен padding-bottom ескеріліп реттелді */
+        right: 30px; /* Оң жақтан да сәл шегініс */
+        background-color: #0a2a66;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        cursor: pointer;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chat-popup {
+        display: none;
+        position: fixed;
+        bottom: 100px; /* Чат батырмасының үстінде (bottom + button_height + margin) */
+        right: 30px;
+        width: 320px;
+        max-height: 450px;
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-header {
+        background-color: #f1f1f1;
+        padding: 10px 15px;
+        border-bottom: 1px solid #ddd;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chat-header h5 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: bold;
+    }
+
+    .chat-close-btn {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+
+    .chat-messages {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background-color: #f9f9f9;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-message {
+        padding: 8px 12px;
+        border-radius: 18px;
+        margin-bottom: 10px;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+
+    .chat-message.user {
+        background-color: #0a2a66;
+        color: white;
+        align-self: flex-end;
+        margin-left: auto;
+    }
+
+    .chat-message.bot {
+        background-color: #e9e9eb;
+        color: #333;
+        align-self: flex-start;
+        margin-right: auto;
+    }
+
+    .chat-input-area {
+        display: flex;
+        padding: 10px;
+        border-top: 1px solid #ddd;
+        background-color: #fff;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    .chat-input-area input[type="text"] {
+        flex-grow: 1;
+        border: 1px solid #ccc;
+        padding: 8px 10px;
+        border-radius: 20px;
+        margin-right: 8px;
+        outline: none;
+    }
+
+    .chat-input-area button {
+        background-color: #0a2a66;
+        color: white;
+        border: none;
+        padding: 0 15px;
+        height: 38px;
+        line-height: 38px;
+        border-radius: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .chat-input-area button:hover {
+        background-color: #082250;
+    }
+</style>
 </head>
 <body class="body-with-bg">
     <!-- Navigation Bar (Bootstrap) -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm fixed-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
-                {# --- ИЗМЕНЕНО: Укажите правильный путь к логотипу --- #}
                 <img src="{% static 'image/image.png' %}" alt="SmartOqulyq logo" height="40" class="d-inline-block align-text-top me-2">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -79,21 +237,17 @@
                         <a class="nav-link {% if request.resolver_match.url_name == 'recommendations' %}active fw-bold{% endif %}" href="{% url 'recommendations' %}">Ұсыныстар</a>
                     </li>
 
-                    {# --- НАЧАЛО ИЗМЕНЕНИЙ --- #}
                     {% if user.is_authenticated %}
-                        {# --- Показываем ЭТО, если пользователь ВОШЕЛ --- #}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-user me-1"></i>
-                                {{ user.first_name|default:user.username }} {# Показываем имя или username #}
+                                {{ user.first_name|default:user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
-                                {# Ссылка на Дашборд (пример) #}
                                 <li><a class="dropdown-item" href="{% url 'dashboard_schedule' %}">Дашборд</a></li>
-                                <li><a class="dropdown-item" href="{% url 'profile_page' %}">Профиль</a></li> {# Замените # на URL профиля #}
+                                <li><a class="dropdown-item" href="{% url 'profile_page' %}">Профиль</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
-                                    {# Форма для выхода #}
                                     <form action="{% url 'logout' %}" method="post" class="d-inline">
                                         {% csrf_token %}
                                         <button type="submit" class="dropdown-item">Шығу</button>
@@ -102,19 +256,16 @@
                             </ul>
                         </li>
                     {% else %}
-                        {# --- Показываем ЭТО, если пользователь НЕ ВОШЕЛ --- #}
                         <li class="nav-item">
-                            {# Кнопка входа #}
                             <a href="{% url 'login' %}" class="btn btn-primary ms-lg-2 mt-2 mt-lg-0">Кіру</a>
                         </li>
                     {% endif %}
-                    {# --- КОНЕЦ ИЗМЕНЕНИЙ --- #}
-
                 </ul>
             </div>
         </div>
     </nav>
 
+    <!-- Остальной контент страницы (Hero, About, Features, Services, CTA Sections) ... -->
     <!-- Hero Section -->
     <div class="content-section-transparent">
         <div class="container">
@@ -262,7 +413,35 @@
         </div>
     </footer>
 
+    <!-- Chatbot Widget HTML -->
+    <button class="chat-widget-button" id="chatWidgetButton">
+        <i class="fas fa-comments"></i>
+    </button>
+
+    <div class="chat-popup" id="chatPopup">
+        <div class="chat-header">
+            <h5>SmartOqulyq Көмекшісі</h5>
+            <button class="chat-close-btn" id="chatCloseBtn">×</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-message bot">
+                Сәлеметсіз бе! Мен SmartOqulyq көмекшісімін. Сізге қалай көмектесе аламын?
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Хабарламаңызды жазыңыз...">
+            <button id="chatSendBtn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+    <!-- End Chatbot Widget HTML -->
+
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <!-- Подключение внешнего файла chat.js -->
+    {# Убедитесь, что путь 'js/chat.js' соответствует расположению вашего файла в статической папке #}
+    {# Например, если chat.js лежит в static/my_app/js/chat.js, то путь будет 'my_app/js/chat.js' #}
+    <script src="{% static 'java script/Chat.js' %}"></script>
+
 </body>
 </html>

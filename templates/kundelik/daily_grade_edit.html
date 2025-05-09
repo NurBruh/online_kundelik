@@ -1,112 +1,412 @@
-{% extends 'dashboard_base.html' %}
-{% load static i18n widget_tweaks %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartOqulyq - Басты бет</title>
 
-{% block dashboard_title %}{% trans "Күнделікті бағаны өңдеу" %}{% endblock %}
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 
-{% block extra_css %}
-<style>
-    .form-label {
-        font-weight: 500;
-    }
-    /* Өрістерді disabled еткендегі стиль */
-    .form-control:disabled, .form-select:disabled {
-        background-color: #e9ecef; /* Сұр фон */
-        opacity: 0.7; /* Сәл мөлдірлеу */
-    }
-</style>
-{% endblock %}
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
 
-{% block dashboard_content %}
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">
-            {% blocktrans with student_name=grade.student.get_full_name subject_name=grade.subject.name grade_date=grade.date|date:"d.m.Y" %}
-                {{ student_name }} - {{ subject_name }} ({{ grade_date }}) бағасын өңдеу
-            {% endblocktrans %}
-        </h1>
-        {# Артқа қайту сілтемесі (баға қою бетіне, фильтрлерді сақтауға тырысамыз) #}
-        {% url 'add_daily_grade' as add_grade_url %}
-        {% if grade.student.userprofile.school_class %}
-            <a href="{{ add_grade_url }}?class_id={{ grade.student.userprofile.school_class.pk }}&subject_id={{ grade.subject.pk }}&date={{ grade.date|date:'Y-m-d' }}" class="btn btn-sm btn-outline-secondary">
-                <i class="fas fa-arrow-left me-1"></i> {% trans "Артқа қайту" %}
+    <!-- Ваши кастомные стили -->
+    <style>
+        body.body-with-bg {
+            background-image: url("{% static 'image/BG-image.jpg' %}"); /* Используем static */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            padding-top: 70px; /* Увеличил отступ под навбар */
+            margin-bottom: 80px; /* Добавляем отступ снизу, чтобы кнопка чата не перекрывала футер */
+        }
+        .content-section-transparent {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding-top: 4rem;
+            padding-bottom: 4rem;
+        }
+        .about-section {
+            background-color: #e7f1ff;
+            padding-top: 2.5rem;
+            padding-bottom: 2.5rem;
+        }
+        .cta-section {
+            background-color: #0a2a66;
+            color: white;
+            padding-top: 4rem;
+            padding-bottom: 4rem;
+        }
+        .service-card-img {
+            height: 200px;
+            object-fit: cover;
+        }
+        .navbar-nav .nav-link {
+            text-decoration: none;
+        }
+        .navbar-brand:hover,
+        .navbar-nav .nav-link:hover {
+             color: var(--bs-primary) !important;
+        }
+        /* Стили для выпадающего меню пользователя */
+        .dropdown-menu {
+            min-width: auto; /* Чтобы меню не было слишком широким */
+        }
+
+        /* Стили для чат-бота */
+        .chat-widget-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #0a2a66; /* Цвет из вашей cta-section */
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-popup {
+            display: none; /* По умолчанию скрыт */
+            position: fixed;
+            bottom: 90px; /* Расположение над кнопкой */
+            right: 20px;
+            width: 320px;
+            max-height: 450px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: flex; /* Используем display: flex для chat-popup */
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background-color: #f1f1f1;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h5 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .chat-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-message {
+            padding: 8px 12px;
+            border-radius: 18px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            word-wrap: break-word; /* Для переноса длинных слов */
+        }
+
+        .chat-message.user {
+            background-color: #0a2a66; /* Цвет из вашей cta-section */
+            color: white;
+            align-self: flex-end; /* Сообщение пользователя справа */
+            margin-left: auto;
+        }
+
+        .chat-message.bot {
+            background-color: #e9e9eb;
+            color: #333;
+            align-self: flex-start; /* Сообщение бота слева */
+            margin-right: auto;
+        }
+
+
+        .chat-input-area {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            background-color: #fff; /* Добавим фон, чтобы не был прозрачным */
+            border-bottom-left-radius: 8px; /* Скругление углов для инпут-зоны */
+            border-bottom-right-radius: 8px;
+        }
+
+        .chat-input-area input[type="text"] {
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            padding: 8px 10px;
+            border-radius: 20px;
+            margin-right: 8px;
+            outline: none;
+        }
+
+        .chat-input-area button {
+            background-color: #0a2a66; /* Цвет из вашей cta-section */
+            color: white;
+            border: none;
+            padding: 0 15px; /* Убрал вертикальный padding для лучшего выравнивания иконки */
+            height: 38px; /* Фиксированная высота кнопки */
+            line-height: 38px; /* Выравнивание иконки по центру */
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-input-area button:hover {
+            background-color: #082250; /* Чуть темнее при наведении */
+        }
+
+    </style>
+</head>
+<body class="body-with-bg">
+    <!-- Navigation Bar (Bootstrap) -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm fixed-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+                <img src="{% static 'image/image.png' %}" alt="SmartOqulyq logo" height="40" class="d-inline-block align-text-top me-2">
             </a>
-        {% else %}
-             {# Егер сынып белгісіз болса, параметрсіз қайту #}
-             <a href="{{ add_grade_url }}" class="btn btn-sm btn-outline-secondary">
-                 <i class="fas fa-arrow-left me-1"></i> {% trans "Артқа қайту" %}
-             </a>
-        {% endif %}
-    </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active fw-bold{% endif %}" aria-current="page" href="{% url 'home' %}">Басты бет</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'about_us' %}active fw-bold{% endif %}" href="{% url 'about_us' %}">Біз туралы</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'recommendations' %}active fw-bold{% endif %}" href="{% url 'recommendations' %}">Ұсыныстар</a>
+                    </li>
 
-    <div class="card shadow-sm">
-        <div class="card-header">
-            <h5 class="mb-0">{% trans "Бағаны өңдеу формасы" %}</h5>
-        </div>
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-
-                {% if form.non_field_errors %}
-                    <div class="alert alert-danger" role="alert">
-                        {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
-                    </div>
-                {% endif %}
-
-                <div class="row">
-                    {# --- Өңделмейтін өрістерді көрсету --- #}
-                    <div class="col-md-6 mb-3">
-                         <label class="form-label">{% trans "Оқушы:" %}</label>
-                         {# 'student' өрісі формада disabled, бірақ мәнін grade-тан аламыз #}
-                         <input type="text" class="form-control form-control-sm" value="{{ grade.student.get_full_name|default:grade.student.username }}" disabled>
-                    </div>
-                     <div class="col-md-6 mb-3">
-                         <label class="form-label">{% trans "Пән:" %}</label>
-                         {# 'subject' өрісі формада disabled, бірақ мәнін grade-тан аламыз #}
-                         <input type="text" class="form-control form-control-sm" value="{{ grade.subject.name }}" disabled>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                         <label class="form-label">{% trans "Күні:" %}</label>
-                         {# 'date' өрісі формада disabled, бірақ мәнін grade-тан аламыз #}
-                         <input type="date" class="form-control form-control-sm" value="{{ grade.date|date:'Y-m-d' }}" disabled>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                         <label class="form-label">{% trans "Тоқсан:" %}</label>
-                         {# 'term' өрісі формада жоқ, мәнін grade-тан аламыз #}
-                         <input type="text" class="form-control form-control-sm" value="{{ grade.term }}" disabled>
-                    </div>
-
-                    {# --- Өңделетін өрістер --- #}
-                    {# Баға өрісі #}
-                    <div class="col-md-6 mb-3">
-                         <label for="{{ form.grade.id_for_label }}" class="form-label">
-                             {{ form.grade.label }}{% if form.grade.field.required %}<span class="text-danger">*</span>{% endif %}
-                         </label>
-                         {% render_field form.grade class+="form-control form-control-sm" %}
-                         {% if form.grade.errors %}<div class="invalid-feedback d-block">{{ form.grade.errors|striptags }}</div>{% endif %}
-                    </div>
-                     {# Комментарий өрісі (бүкіл еніне) #}
-                    <div class="col-md-12 mb-3">
-                         <label for="{{ form.comment.id_for_label }}" class="form-label">{{ form.comment.label }}</label>
-                         {% render_field form.comment class+="form-control form-control-sm" %}
-                         {% if form.comment.errors %}<div class="invalid-feedback d-block">{{ form.comment.errors|striptags }}</div>{% endif %}
-                    </div>
-
-                     {# Жасырын өрістерді (формада бар болса, мысалы 'teacher') шығару #}
-                     {% for field in form %}{% if field.is_hidden %}{{ field }}{% endif %}{% endfor %}
-                </div>
-
-                <hr>
-                <div class="text-end">
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="fas fa-save me-1"></i> {% trans "Сақтау" %}
-                    </button>
-                    {# Артқа қайту сілтемесінің екінші нұсқасы (Болдырмау) #}
-                    {% if grade.student.userprofile.school_class %}
-                        <a href="{{ add_grade_url }}?class_id={{ grade.student.userprofile.school_class.pk }}&subject_id={{ grade.subject.pk }}&date={{ grade.date|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm">{% trans "Болдырмау" %}</a>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user me-1"></i>
+                                {{ user.first_name|default:user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUserDropdown">
+                                <li><a class="dropdown-item" href="{% url 'dashboard_schedule' %}">Дашборд</a></li>
+                                <li><a class="dropdown-item" href="{% url 'profile_page' %}">Профиль</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="{% url 'logout' %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item">Шығу</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
                     {% else %}
-                         <a href="{{ add_grade_url }}" class="btn btn-outline-secondary btn-sm">{% trans "Болдырмау" %}</a>
+                        <li class="nav-item">
+                            <a href="{% url 'login' %}" class="btn btn-primary ms-lg-2 mt-2 mt-lg-0">Кіру</a>
+                        </li>
                     {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="content-section-transparent">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-7 mb-5 mb-lg-0">
+                    <h1 class="display-5 fw-bold text-dark mb-4">Білімге қадам – SmartOqulyq-пен бірге!</h1>
+                    <p class="lead text-secondary mb-5">
+                        <strong>SmartOqulyq</strong> – мектеп оқушыларына арналған инновациялық білім беру платформасы. Мұнда сіз өзіңіздің оқу игеріміңізді бақылай аласыз, тесттер мен бақылау жұмыстарын оңай тапсырасыз және білім алуды барынша ыңғайлы етесіз.
+                    </p>
+                    <div class="d-flex flex-wrap gap-5 mb-5">
+                        <div>
+                            <span class="fs-2 fw-bold text-primary">1000+</span>
+                            <p class="text-muted mb-0">мектеп қолданып жатыр</p>
+                        </div>
+                        <div>
+                            <span class="fs-2 fw-bold text-primary">10K+</span>
+                            <p class="text-muted mb-0">тіркелген оқушы</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-lg">
+                        Бастау
+                    </a>
                 </div>
-            </form>
+                <div class="col-lg-5 text-center">
+                    <img src="https://storage.googleapis.com/a1aa/image/xP6k7wJBUUj8fBLDRV-aI6quv18SGeQpRoIqOSFg4Sk.jpg" alt="Students learning with SmartOqulyq" class="img-fluid rounded shadow-lg">
+                </div>
+            </div>
         </div>
     </div>
-{% endblock %}
+
+    <!-- About Section -->
+    <div class="about-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center">
+                    <img alt="A young boy with glasses..." class="img-fluid rounded shadow-lg" height="300" src="https://storage.googleapis.com/a1aa/image/dvSJHnkUABBDtBbBCPE7u1VJU7PsC4nfZHHIt_iLqWk.jpg" width="400">
+                </div>
+                <div class="col-md-6 mt-4 mt-md-0">
+                    <h2 class="text-uppercase small fw-semibold text-secondary">Біз туралы</h2>
+                    <h3 class="h2 fw-bold mt-2 text-dark">SmartOqulyq платформасының тарихы</h3>
+                    <p class="mt-4 text-secondary">SmartOqulyq — Қазақстандағы мектеп оқушыларына арналған білім беру платформасы, оқу және тестілеуді жеңілдету үшін құрылған.</p>
+                    <a href="{% url 'about_us' %}" class="btn btn-primary mt-4">Толығырақ</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="content-section-transparent">
+        <div class="container">
+             <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h2 class="text-uppercase small fw-semibold text-secondary">Біздің артықшылықтарымыз</h2>
+                    <h3 class="h2 fw-bold mt-2 text-dark">Басқа платформалардан ерекшеленеміз</h3>
+                    <p class="mt-4 text-secondary">Біз оқушыларға, ата-аналарға және мұғалімдерге мықты қолдау көрсетуді мақсат еткен платформа ретінде жұмысты жалғастырамыз.</p>
+                    <ul class="list-unstyled mt-4 text-secondary">
+                       <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Тиімді бақылау</li>
+                       <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Жоғары сапалы материалдар</li>
+                       <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Пайдаланушыға бағдарланған дизайн</li>
+                    </ul>
+                </div>
+                <div class="col-md-6 mt-4 mt-md-0 text-center">
+                    <img alt="A bookshelf filled with various books" class="img-fluid rounded shadow-lg" height="300" src="https://storage.googleapis.com/a1aa/image/wfAt8xCV7snFQv_-CDz74bTQYO36e_A9DZdUGAiHdJQ.jpg" width="400">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Services Section -->
+     <div class="content-section-transparent">
+        <div class="container">
+            <div class="row g-4">
+                {# Карточка Оқушыларға #}
+                <div class="col-lg-4 col-md-6">
+                     <div class="card h-100 shadow-sm">
+                        <img alt="A student studying..." class="card-img-top service-card-img" src="https://storage.googleapis.com/a1aa/image/v6sCrznNPiPPPw0WmRvQhjC9IQmaSQWrUH3_dcp_fTk.jpg">
+                        <div class="card-body d-flex flex-column">
+                            <h4 class="card-title h5 fw-bold mb-3">Оқушыларға:</h4>
+                            <ul class="list-unstyled text-secondary mb-4">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Электронды күнделік және бағалар</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Сабақ кестесі және үй тапсырмалар</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Онлайн сабақтар мен тесттер</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>БЖБ және ТЖБ тапсыру</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ҰБТ-ға дайындық</li>
+                                <li class="mb-2"><i class="fas fa-star text-warning me-2"></i><span class="fw-bold">Smart</span> білім беру курстары</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                 {# Карточка Ата-аналарға #}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 shadow-sm">
+                        <img alt="A family with parents..." class="card-img-top service-card-img" src="https://storage.googleapis.com/a1aa/image/6x3ClnxbeBwM0RXlKeihXyhBxu_SX7rrmd4P6IVHpH4.jpg">
+                        <div class="card-body d-flex flex-column">
+                            <h4 class="card-title h5 fw-bold mb-3">Ата-аналарға:</h4>
+                             <ul class="list-unstyled text-secondary mb-4">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Баланың күнделігі және бағалары</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Үй тапсырмасы мен сабақ кестесі</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Баланың үлгерімін бақылау</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Онлайн сабақтар мен тренажерлер</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ҰБТ-ға дайындық</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Баланың орналасқан жерін бақылау</li>
+                                <li class="mb-2"><i class="fas fa-star text-warning me-2"></i><span class="fw-bold">Smart</span> үлгерім мен бағалар аналитикасы</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                 {# Карточка Мұғалімдерге #}
+                <div class="col-lg-4 col-md-6">
+                   <div class="card h-100 shadow-sm">
+                        <img alt="A teacher holding a book..." class="card-img-top service-card-img" src="https://storage.googleapis.com/a1aa/image/rYJ0cHxDtG1x1sAkENWr9gOqiJUbbUZgNUvkRF5jwfY.jpg">
+                        <div class="card-body d-flex flex-column">
+                            <h4 class="card-title h5 fw-bold mb-3">Мұғалімдерге:</h4>
+                             <ul class="list-unstyled text-secondary mb-4">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Электрондық журнал және бағалау жүйесі</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Сандық білім беру қызметтері</li>
+                                <li class="mb-2"><i class="fas fa-star text-warning me-2"></i><span class="fw-bold">Smart</span> дайын сабақтары мен тесттері</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Мұғалімдерге арналған курстар</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Білім сапасы және икемді есептер</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Қашықтықтан оқыту құралдары</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Цифрлық форматтағы мектеп оқулықтары</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ЭЦҚ арқылы құжаттарға қол қою</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>БЖБ және ТЖБ құру</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action Section -->
+    <div class="cta-section text-center">
+        <div class="container">
+            <h2 class="h1 fw-bold mb-3">Біздің платформаны сынап көріңіз</h2>
+            <p class="lead mb-4"><span class="fst-italic">SmartOqulyq</span>-қа қосылыңыз және оқу үрдісін жаңартыңыз!</p>
+            <a href="{% url 'login' %}" class="btn btn-light btn-lg fw-bold">Бастау</a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3">
+         <div class="container">
+            <p class="text-muted small mb-0">Авторлық құқық © {% now "Y" %} SmartOqulyq</p>
+        </div>
+    </footer>
+
+    <!-- Chatbot Widget -->
+    <button class="chat-widget-button" id="chatWidgetButton">
+        <i class="fas fa-comments"></i>
+    </button>
+
+    <div class="chat-popup" id="chatPopup">
+        <div class="chat-header">
+            <h5>SmartOqulyq Көмекшісі</h5>
+            <button class="chat-close-btn" id="chatCloseBtn">×</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <!-- Пример сообщения от бота -->
+            <div class="chat-message bot">
+                Сәлеметсіз бе! Мен SmartOqulyq көмекшісімін. Сізге қалай көмектесе аламын?
+            </div>
+            <!-- Сюда будут добавляться сообщения -->
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Хабарламаңызды жазыңыз...">
+            <button id="chatSendBtn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script>
+
+    </script>
+</body>
+</html>
